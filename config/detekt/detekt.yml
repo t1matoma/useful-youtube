@@ -23,6 +23,9 @@ complexity:
       - Composable
 
 style:
+  ReturnCount:
+    max: 3
+    excludeGuardClauses: true
   UnusedPrivateMember:
     ignoreAnnotated:
       - Preview
