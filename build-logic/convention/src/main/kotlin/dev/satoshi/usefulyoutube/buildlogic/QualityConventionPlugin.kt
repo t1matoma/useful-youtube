@@ -25,7 +25,7 @@ class QualityConventionPlugin : Plugin<Project> {
 
             extensions.configure<DetektExtension> {
                 buildUponDefaultConfig = true
-                parallel = true
+                parallel = false
                 config.setFrom(rootProject.file("config/detekt/detekt.yml"))
                 source.setFrom(
                     "src/main/kotlin",

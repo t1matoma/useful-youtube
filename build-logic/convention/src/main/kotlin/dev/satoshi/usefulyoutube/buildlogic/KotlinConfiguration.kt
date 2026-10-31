@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 private val javaVersion = JavaVersion.VERSION_17
 private val kotlinJvmTarget = JvmTarget.JVM_17
 private const val JDK_TOOLCHAIN_VERSION = 21
+private const val TEST_MAX_HEAP_SIZE = "1g"
 
 internal fun Project.configureKotlinAndroid(commonExtension: CommonExtension) {
     commonExtension.apply {
@@ -53,6 +54,8 @@ private fun Project.addCommonTestDependencies() {
     // Generated sources (Hilt, Room) make Gradle expect tests even in modules that have none yet.
     tasks.withType<Test>().configureEach {
         failOnNoDiscoveredTests.set(false)
+        maxHeapSize = TEST_MAX_HEAP_SIZE
+        maxParallelForks = 1
     }
     dependencies {
         add("testImplementation", libs.library("junit"))
