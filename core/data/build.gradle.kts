@@ -14,4 +14,7 @@ dependencies {
     implementation(projects.core.network)
 
     testImplementation(projects.core.testing)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.room.runtime)
 }

@@ -9,5 +9,8 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.model)
+    api(projects.core.model)
+
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.robolectric)
 }

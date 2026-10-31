@@ -1,0 +1,32 @@
+package dev.satoshi.usefulyoutube.core.database.di
+
+import android.content.Context
+import androidx.room.Room
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import dev.satoshi.usefulyoutube.core.database.UsefulYouTubeDatabase
+import dev.satoshi.usefulyoutube.core.database.dao.ChannelDao
+import dev.satoshi.usefulyoutube.core.database.dao.VideoDao
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+internal object DatabaseModule {
+    @Provides
+    @Singleton
+    fun provideDatabase(
+        @ApplicationContext context: Context,
+    ): UsefulYouTubeDatabase =
+        Room
+            .databaseBuilder(context, UsefulYouTubeDatabase::class.java, UsefulYouTubeDatabase.NAME)
+            .build()
+
+    @Provides
+    fun provideChannelDao(database: UsefulYouTubeDatabase): ChannelDao = database.channelDao()
+
+    @Provides
+    fun provideVideoDao(database: UsefulYouTubeDatabase): VideoDao = database.videoDao()
+}
