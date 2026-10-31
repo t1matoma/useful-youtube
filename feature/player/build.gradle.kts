@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "dev.satoshi.usefulyoutube.feature.player"
 }
+
+dependencies {
+    implementation(libs.youtube.player)
+}
