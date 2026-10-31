@@ -8,6 +8,8 @@ android {
 }
 
 dependencies {
+    api(projects.core.model)
     api(libs.androidx.compose.material3)
+    api(libs.androidx.compose.material.icons.core)
     api(libs.androidx.compose.ui)
 }
