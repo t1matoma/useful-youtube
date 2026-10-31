@@ -1,113 +1,106 @@
 # Specification
 
-Product and engineering requirements for Useful YouTube. This is the source of truth for scope:
-anything not described here needs the maintainer's approval before it is built.
+What Useful YouTube does and the constraints it must keep. This document describes the current behaviour
+of the app. Changing any of it — adding, removing or altering behaviour — requires the maintainer's approval.
 
-## Goal
+## Purpose
 
-An Android app that shows a feed of new videos from your YouTube subscriptions without Shorts and plays
-them in an embedded player. No recommendations and no backend: everything runs on the device.
+An Android app that shows a chronological feed of new videos from the user's YouTube subscriptions,
+without Shorts and without recommendations, and plays them in the official embedded player.
 
-## MVP features
+## Non-negotiable constraints
 
-1. Import subscriptions from Google Takeout (`subscriptions.csv`: Channel Id, Channel Url, Channel Title).
-2. Load each channel's latest videos from its RSS feed
-   `https://www.youtube.com/feeds/videos.xml?channel_id={id}`, in parallel with limited concurrency.
-3. Load durations and details with YouTube Data API v3 `videos.list` (`part=contentDetails,snippet`)
-   in batches of 50 ids.
-4. Filter Shorts through the `ShortsDetector` interface (strategy pattern):
-   - `DurationShortsDetector`: duration ≤ 180 s;
-   - `UrlShortsDetector`: `HEAD https://www.youtube.com/shorts/{id}` without a redirect means a Short;
-   - a composition of strategies. Live streams and premieres (duration `P0D`) are never Shorts.
-5. Feed: all subscription videos sorted by date, pull-to-refresh, loading, error and empty states.
-6. Video screen: player ([android-youtube-player](https://github.com/PierfrancescoSoffritti/android-youtube-player)),
-   title, channel, description.
-7. Channels screen: list of subscriptions, removal, adding by link or id.
-8. Background refresh with WorkManager (hourly, only when a network is available).
-9. Offline-first: the UI always reads from Room; the network only updates the database.
+- **No backend.** Everything runs on the device.
+- **Official, public sources only:** channel RSS feeds, YouTube Data API v3, the IFrame player.
+  No unofficial APIs, scraping of HTML pages or private endpoints.
+- **No recommendations.** The app shows only videos of channels the user subscribed to.
+- **Offline-first.** The UI always reads from the local database; the network only updates it.
+- **Secrets stay local.** The Data API key comes from `local.properties` → `BuildConfig` and is never committed.
 
-### Approved additions and decisions
+## Features
 
-- Shorts composition: duration > 180 s → not a Short (no request); ≤ 180 s → the `/shorts/{id}` check
-  decides; if the check fails → the duration verdict is kept.
+### Subscriptions
+
+- Import from Google Takeout `subscriptions.csv` (columns: Channel Id, Channel Url, Channel Title).
+  Columns are read by position because Takeout localizes the header. Already subscribed channels are skipped.
+- Add a channel by id (`UC…`), by `@handle`, or by a link `youtube.com/channel/UC…` / `youtube.com/@handle`.
+  An id is verified through the channel's RSS feed; a handle is resolved with Data API
+  `channels.list?forHandle=`.
+- Remove a channel after confirmation; its videos are removed with it.
+
+### Feed refresh
+
+1. Load the RSS feed of every channel, `https://www.youtube.com/feeds/videos.xml?channel_id={id}`,
+   in parallel with at most 8 concurrent requests.
+2. Load durations and details of new videos with Data API `videos.list`
+   (`part=contentDetails,snippet`) in batches of 50 ids.
+3. Classify new videos as regular, Short, or live stream/premiere (see below).
+
+A failure of a single channel does not stop the refresh and is not shown in the UI. The refresh fails
+only when every channel failed or the details request failed.
+
+The refresh runs when the feed opens, on pull-to-refresh, and hourly in the background with WorkManager
+when a network connection is available.
+
+### Shorts detection
+
+Implemented as the `ShortsDetector` strategy:
+
+- `DurationShortsDetector`: a video of 180 seconds or less is a Short.
+- `UrlShortsDetector`: `HEAD https://www.youtube.com/shorts/{id}` without following redirects; `200` means
+  a Short, a redirect to `/watch` means a regular video, anything else is inconclusive.
+- `CompositeShortsDetector`: videos longer than 180 seconds are regular without any request; shorter ones
+  are decided by the URL check; if the URL check is inconclusive, the duration verdict is kept.
+- Live streams and premieres (duration `P0D`) are never Shorts and stay in the feed.
 - Videos whose details are not loaded yet are hidden until they are classified.
-- Channels can also be added by `@handle` (Data API `channels.list?forHandle=`).
-- The feed refreshes when it opens.
-- The player uses `rel=0` so that related videos come from the same channel only.
-- Removing a channel asks for confirmation.
-- The video description can be expanded and collapsed.
-- The player survives screen rotation (`configChanges`).
-- Partial refresh failures (only some channels failed) are not shown in the UI.
-- Quality checks run locally (`./gradlew check`); there is no CI service.
+
+### Feed screen
+
+- All regular videos and live streams/premieres of all subscriptions, newest first.
+- Each item: thumbnail, duration or a live badge, title, channel, relative publication date.
+- Pull-to-refresh; loading, empty (with a shortcut to import), and error (with retry) states.
+- A refresh error over stored videos is shown once in a snackbar.
+
+### Video screen
+
+- Official IFrame player ([android-youtube-player](https://github.com/PierfrancescoSoffritti/android-youtube-player))
+  with `rel=0`, so related videos at the end come from the same channel only.
+- Title, channel, and a selectable description that can be expanded and collapsed.
+- Playback survives screen rotation.
 
 ## Tech stack
 
 - Kotlin, Jetpack Compose, Material 3, minSdk 26, latest stable library versions.
 - Gradle Kotlin DSL, version catalog (`gradle/libs.versions.toml`), convention plugins in `build-logic`.
-- Hilt, Coroutines + Flow, Room, Retrofit/OkHttp + kotlinx.serialization, an XML parser for RSS (xmlutil),
-  Coil, WorkManager, Navigation Compose.
-- The API key comes from `local.properties` → `BuildConfig` and is never committed.
-- Only official/public sources: Data API, RSS, IFrame player. No unofficial APIs.
+- Hilt, Coroutines + Flow, Room, Retrofit/OkHttp + kotlinx.serialization, xmlutil for RSS, Coil,
+  WorkManager, Navigation Compose.
 
-## Architecture
+## Architecture rules
 
-Clean Architecture + MVVM with unidirectional data flow. Modules:
+Clean Architecture + MVVM with unidirectional data flow. Details: [ARCHITECTURE.md](ARCHITECTURE.md).
 
-- `:app` — entry point, navigation, DI graph;
-- `:core:model` — domain models (pure Kotlin);
-- `:core:domain` — use cases, repository interfaces, `ShortsDetector`;
-- `:core:data` — repository implementations, mappers;
-- `:core:database` — Room (entities, DAO, migrations);
-- `:core:network` — Retrofit services, RSS parser, DTOs;
-- `:core:ui` — shared Compose components, theme;
-- `:core:testing` — fakes, test data, rules;
-- `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import`.
-
-Rules:
-
+- Modules: `:app`, `:core:model`, `:core:domain`, `:core:data`, `:core:database`, `:core:network`,
+  `:core:ui`, `:core:testing`, `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import`.
 - Dependencies point inwards: feature → domain ← data. Feature modules do not depend on each other.
-- The domain layer has no Android dependencies.
-- A ViewModel exposes a single `StateFlow<UiState>` (sealed or data class) and receives events through
-  `onEvent(UiEvent)`.
-- Composable screens are stateless: `Screen(state, onEvent)` plus a separate `Route` connected to the ViewModel.
-- Errors are modelled explicitly (`AppResult` / sealed types); exceptions never reach the UI.
-- Dispatchers are injected, not hardcoded.
+- `:core:model` and `:core:domain` have no Android dependencies.
+- A ViewModel exposes a single `StateFlow<UiState>` and receives events through `onEvent(UiEvent)`.
+- Screens are stateless `Screen(state, onEvent)` composables with a separate `Route` connected to the ViewModel.
+- Errors are explicit (`AppResult` with typed errors); exceptions never reach the UI.
+- Coroutine dispatchers are injected.
 
-Details: [ARCHITECTURE.md](ARCHITECTURE.md).
-
-## Code style
-
-- ktlint and detekt with configs in the repository; code passes them without warnings.
-- Official Kotlin code style, clear names without abbreviations.
-- No magic numbers: named constants.
-- KDoc only for public API whose purpose is not obvious.
-- The same patterns in every feature module (package structure, naming such as `FeedViewModel`,
-  `FeedUiState`, `FeedScreen`, `FeedRoute`).
+## Quality requirements
 
 Details: [CODE_STYLE.md](CODE_STYLE.md).
 
-## Tests
-
-- Unit tests (JUnit, kotlinx-coroutines-test, Turbine, AssertK): use cases, `ShortsDetector`, mappers,
-  CSV and RSS parsers, ViewModels.
-- Fakes instead of mocks where possible (fake repositories in `:core:testing`).
-- Room: DAO tests on an in-memory database.
-- Network: MockWebServer with JSON/XML fixtures.
-- Compose UI: tests of key screens (feed, error and empty states).
-- WorkManager: worker test with `TestListenableWorkerBuilder`.
-- Coverage of the domain and data layers ≥ 80% (Kover).
-- `./gradlew check` must pass completely (tests + lint + ktlint + detekt + Kover).
-
-## Implementation history
-
-The MVP was built in these stages, each ending with a green `./gradlew check` and a commit:
-
-1. Project skeleton, build-logic, quality checks (ktlint, detekt, Kover).
-2. Models, domain and `ShortsDetector` with tests.
-3. Network: RSS parser, Data API client.
-4. Database and offline-first repositories.
-5. Subscription import.
-6. Feed screen.
-7. Player.
-8. Channels screen.
-9. WorkManager.
+- ktlint and detekt pass without warnings; Kotlin warnings are errors.
+- Official Kotlin code style, clear names without abbreviations, no magic numbers.
+- The same structure and naming in every feature module (`FeedViewModel`, `FeedUiState`, `FeedScreen`, `FeedRoute`).
+- Tests:
+  - unit tests for use cases, Shorts detectors, mappers, parsers and ViewModels;
+  - fakes instead of mocks;
+  - DAO tests on an in-memory database;
+  - MockWebServer with fixtures for the network;
+  - Compose UI tests of the feed states;
+  - a worker test with `TestListenableWorkerBuilder`.
+- Line coverage of `:core:domain` and `:core:data` is at least 80% (Kover).
+- `./gradlew check` passes completely.

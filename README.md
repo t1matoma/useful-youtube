@@ -76,7 +76,7 @@ Gradle memory settings in `gradle.properties` are conservative, so the project b
 
 ## Documentation
 
-- [docs/SPECIFICATION.md](docs/SPECIFICATION.md) — scope, requirements and approved decisions.
+- [docs/SPECIFICATION.md](docs/SPECIFICATION.md) — current behaviour, constraints and requirements.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — modules, data flow, Shorts detection.
 - [docs/CODE_STYLE.md](docs/CODE_STYLE.md) — conventions, screen template, tests, commits.
 - [AGENTS.md](AGENTS.md) — guide for AI coding agents.
