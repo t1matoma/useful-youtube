@@ -1,79 +1,82 @@
 # Useful YouTube
 
-Личное Android-приложение: лента новых видео из ваших подписок YouTube **без Shorts** и без рекомендаций.
-Видео открываются во встроенном официальном плеере. Сервер не нужен: всё работает на телефоне.
+An Android app that shows a chronological feed of new videos from your YouTube subscriptions —
+**without Shorts and without recommendations** — and plays them in the official embedded player.
+There is no backend: everything runs on the device.
 
-## Возможности
+## Features
 
-- Импорт подписок из Google Takeout (`subscriptions.csv`).
-- Лента всех видео подписок по дате, pull-to-refresh, обновление при открытии.
-- Отсев Shorts: по длительности (≤ 180 с) с проверкой адреса `youtube.com/shorts/{id}`.
-  Трансляции и премьеры показываются.
-- Экран видео: плеер, название, канал, описание.
-- Управление каналами: добавление по ссылке, `@handle` или id (`UC…`), удаление.
-- Фоновое обновление раз в час при наличии сети (WorkManager).
-- Офлайн-режим: интерфейс всегда показывает данные из локальной базы.
+- Import subscriptions from Google Takeout (`subscriptions.csv`).
+- Feed of all subscription videos sorted by date, with pull-to-refresh and refresh on open.
+- Shorts filtering: by duration (≤ 180 s), confirmed by checking `youtube.com/shorts/{id}`.
+  Live streams and premieres are kept.
+- Video screen: player, title, channel, description.
+- Channel management: add by link, `@handle` or channel id (`UC…`), remove.
+- Hourly background refresh when a network is available (WorkManager).
+- Offline-first: the UI always shows data from the local database.
 
-Источники данных только официальные и публичные: RSS-ленты каналов, YouTube Data API v3 и IFrame-плеер.
+Only official, public data sources are used: channel RSS feeds, YouTube Data API v3 and the IFrame player.
 
-## Требования
+> The UI is currently in Russian.
 
-- Android-устройство с Android 8.0 (API 26) или новее.
-- Android SDK (platform 37, build-tools 37). Путь указывается в `local.properties` → `sdk.dir`.
-- JDK устанавливать не нужно: Gradle сам скачает Adoptium JDK 21 (`gradle/gradle-daemon-jvm.properties`).
-- Ключ YouTube Data API v3.
-- Около 3 ГБ свободной памяти для сборки. Настройки рассчитаны на машину с 8 ГБ ОЗУ.
+## Requirements
 
-## Настройка
+- An Android device or emulator running Android 8.0 (API 26) or newer.
+- Android SDK with platform 37 and build-tools 37. Set `sdk.dir` in `local.properties` or `ANDROID_HOME`.
+- No local JDK is needed: Gradle downloads JDK 21 automatically (`gradle/gradle-daemon-jvm.properties`).
+- A YouTube Data API v3 key.
 
-### 1. Ключ YouTube Data API
+## Setup
 
-1. В [Google Cloud Console](https://console.cloud.google.com/) создайте проект.
-2. Включите **YouTube Data API v3** (APIs & Services → Library).
-3. Создайте ключ: Credentials → Create credentials → API key. Желательно ограничить его только YouTube Data API v3.
-4. Добавьте в `local.properties` в корне проекта (файл не коммитится):
+### 1. YouTube Data API key
+
+1. Create a project in the [Google Cloud Console](https://console.cloud.google.com/).
+2. Enable **YouTube Data API v3** (APIs & Services → Library).
+3. Create a key: Credentials → Create credentials → API key. Restricting it to YouTube Data API v3 is recommended.
+4. Add it to `local.properties` in the project root (this file is git-ignored):
 
    ```properties
-   sdk.dir=/home/<user>/Android/Sdk
-   youtube.api.key=ВАШ_КЛЮЧ
+   sdk.dir=/path/to/Android/Sdk
+   youtube.api.key=YOUR_KEY
    ```
 
-Квота: обновление ленты расходует 1 единицу на каждые 50 новых видео (`videos.list`),
-добавление канала по `@handle` — 1 единицу (`channels.list`). RSS-ленты квоту не расходуют.
-Дневного лимита в 10 000 единиц с запасом хватает для личного использования.
+Quota usage:
 
-### 2. Экспорт подписок
+- a refresh costs 1 unit per 50 new videos (`videos.list`);
+- adding a channel by `@handle` costs 1 unit (`channels.list`);
+- RSS feeds cost nothing.
 
-1. Откройте [takeout.google.com](https://takeout.google.com/), снимите все галочки и выберите
-   «YouTube и YouTube Music». В настройках оставьте только «подписки».
-2. Скачайте и распакуйте архив. Нужен файл `subscriptions.csv` (в русской версии он лежит в папке
-   `YouTube и YouTube Music/подписки/`).
-3. Скопируйте его на телефон. В приложении: «Импортировать подписки» → выберите файл.
+The default daily limit of 10,000 units is far more than personal use needs.
 
-## Сборка и установка
+### 2. Export your subscriptions
+
+1. Open [takeout.google.com](https://takeout.google.com/), deselect everything and select
+   **YouTube and YouTube Music**. In its options, keep only **subscriptions**.
+2. Download and unzip the archive, then find `subscriptions.csv` (in the `subscriptions` folder;
+   folder names are localized).
+3. Copy the file to your phone and choose **Import subscriptions** in the app.
+
+## Build and install
 
 ```bash
 ./gradlew :app:assembleDebug
-~/Android/Sdk/platform-tools/adb install app/build/outputs/apk/debug/app-debug.apk
+adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Телефон подключается по USB с включённой отладкой.
-На машине с 8 ГБ памяти эмулятор не используйте: он вместе со сборкой не поместится в ОЗУ.
-
-## Проверки
+## Checks
 
 ```bash
-./gradlew check            # тесты, Android Lint, ktlint, detekt, Kover (≥ 80% для domain и data)
-./gradlew ktlintFormat     # автоисправление форматирования
-./gradlew :core:domain:koverLog :core:data:koverLog   # покрытие
-./gradlew --stop           # освободить память после работы
+./gradlew check            # unit tests, Android Lint, ktlint, detekt, Kover (≥ 80% for domain and data)
+./gradlew ktlintFormat     # fix formatting
+./gradlew :core:domain:koverLog :core:data:koverLog   # coverage
 ```
 
-Во время разработки удобнее проверять отдельный модуль: `./gradlew :feature:feed:check`.
+Gradle memory settings in `gradle.properties` are conservative, so the project builds on machines with
+8 GB of RAM. If you have more memory, override them in `~/.gradle/gradle.properties` for faster builds.
 
-## Документация
+## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) — модули, слои, потоки данных, определение Shorts.
-- [CODE_STYLE.md](CODE_STYLE.md) — стиль кода, шаблоны экранов, тесты, коммиты.
-- [AGENTS.md](AGENTS.md) — руководство для AI-агентов, работающих с репозиторием.
-- [CLAUDE.md](CLAUDE.md) — исходная спецификация проекта.
+- [docs/SPECIFICATION.md](docs/SPECIFICATION.md) — scope, requirements and approved decisions.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — modules, data flow, Shorts detection.
+- [docs/CODE_STYLE.md](docs/CODE_STYLE.md) — conventions, screen template, tests, commits.
+- [AGENTS.md](AGENTS.md) — guide for AI coding agents.

@@ -1,99 +1,83 @@
 # AGENTS.md
 
-Руководство для AI-агентов (Claude Code, Codex и др.), работающих с этим репозиторием.
-Спецификация продукта — в [CLAUDE.md](CLAUDE.md); при расхождении она главнее.
-Подробности: [ARCHITECTURE.md](ARCHITECTURE.md), [CODE_STYLE.md](CODE_STYLE.md).
+Guide for AI coding agents (Claude Code, Codex and others) working on this repository.
 
-## Кратко о проекте
+- Scope and requirements: [docs/SPECIFICATION.md](docs/SPECIFICATION.md). It takes precedence over this file.
+- Design: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- Conventions: [docs/CODE_STYLE.md](docs/CODE_STYLE.md).
 
-Android-приложение (Kotlin, Compose, Material 3, minSdk 26): лента видео из подписок YouTube без
-Shorts. Clean Architecture + MVVM + UDF, многомодульная сборка, offline-first на Room.
-Источники данных только официальные: RSS, YouTube Data API v3, IFrame-плеер.
+## Project in brief
 
-## Правила работы
+Android app (Kotlin, Jetpack Compose, Material 3, minSdk 26) that shows a feed of YouTube subscription
+videos without Shorts. It uses Clean Architecture + MVVM + UDF, a multi-module Gradle build, and is
+offline-first on Room. Only official data sources are allowed: RSS, YouTube Data API v3, the IFrame player.
 
-1. **Не добавляйте функциональность сверх описанной без согласования с владельцем.**
-   При неоднозначном требовании задайте вопрос, а не угадывайте.
-2. Изменения делайте небольшими шагами. Каждый шаг должен оставлять проект в рабочем
-   состоянии с тестами.
-3. Перед коммитом: `./gradlew ktlintFormat check`. Сборка должна проходить без предупреждений.
-4. Коммиты в формате Conventional Commits (см. CODE_STYLE.md). Коммитьте только по просьбе
-   владельца или в рамках согласованного плана.
-5. После этапа кратко опишите владельцу, что сделано и что отклонилось от плана.
-6. Никогда не коммитьте `local.properties`: там путь к SDK и ключ API.
+## Working rules
 
-## Ограничения машины разработчика
+1. **Do not add functionality beyond the specification without the maintainer's approval.**
+   If a requirement is ambiguous, ask instead of guessing.
+2. For non-trivial work, propose a plan first and wait for confirmation.
+3. Work in small steps; every step leaves the project working and tested.
+4. Before committing, run `./gradlew ktlintFormat check`. The build must pass without warnings.
+5. Use Conventional Commits (see `docs/CODE_STYLE.md`). Commit only when asked or as part of an approved plan.
+6. After each step, briefly report what was done and anything that deviated from the plan.
+7. Never commit `local.properties`; it contains the SDK path and the API key.
+8. Keep the dependency rules: feature → domain ← data, no feature-to-feature dependencies, no Android
+   in `:core:model` and `:core:domain`.
 
-Ноутбук с **8 ГБ ОЗУ**. Тяжёлая сборка однажды его уже уронила.
-
-- Не меняйте в сторону увеличения настройки `gradle.properties`: `-Xmx2g`, `org.gradle.parallel=false`,
-  `workers.max=2`, Kotlin in-process, тестовые JVM по 1 ГБ.
-- Во время работы проверяйте отдельный модуль (`./gradlew :feature:feed:check`), полный `check` —
-  перед коммитом.
-- Закончив работу, останавливайте демон: `./gradlew --stop`.
-- Не запускайте эмулятор.
-
-## Окружение
-
-- Android SDK: `~/Android/Sdk` (platform 37, build-tools 37).
-- В системе есть только JRE. JDK 21 для демона Gradle скачивается автоматически
-  (`gradle/gradle-daemon-jvm.properties`, foojay resolver). Системную Java не используйте.
-- Новейшие cmdline-tools перенаправляют `sdkmanager` на новый Android CLI и зависают.
-  Используйте cmdline-tools 19.0 и запускайте `sdkmanager` с `</dev/null`.
-
-## Команды
+## Commands
 
 ```bash
-./gradlew ktlintFormat                    # форматирование
-./gradlew :core:data:check                # проверка одного модуля
-./gradlew check                           # всё: тесты, lint, ktlint, detekt, Kover
+./gradlew ktlintFormat                    # format
+./gradlew :core:data:check                # check one module (faster while iterating)
+./gradlew check                           # everything: tests, lint, ktlint, detekt, Kover
 ./gradlew :core:domain:koverLog :core:data:koverLog
-./gradlew :app:assembleDebug              # APK: app/build/outputs/apk/debug/app-debug.apk
-./gradlew --stop
+./gradlew :app:assembleDebug              # app/build/outputs/apk/debug/app-debug.apk
+./gradlew --stop                          # free memory when done
 ```
 
-## Где что лежит
+## Environment
 
-| Задача | Место |
+- Android SDK with platform 37 and build-tools 37 (`sdk.dir` in `local.properties` or `ANDROID_HOME`).
+- No system JDK is required: the Gradle daemon JVM (JDK 21) is provisioned automatically through
+  `gradle/gradle-daemon-jvm.properties` and the foojay resolver.
+- `gradle.properties` is tuned to build on machines with 8 GB of RAM: 2 GB heap, no parallel execution,
+  two workers, Kotlin compiled in-process, 1 GB test JVMs. Do not raise these values in the repository;
+  developers with more memory can override them in `~/.gradle/gradle.properties`.
+- Prefer checking a single module while iterating and the full `check` before committing.
+
+## Where things live
+
+| Task | Location |
 |---|---|
-| Новая зависимость | `gradle/libs.versions.toml` (последние стабильные версии) |
-| Общая настройка модулей | `build-logic/convention/.../buildlogic/*ConventionPlugin.kt` |
-| Бизнес-логика, use case | `:core:domain` (чистый Kotlin, без Android) |
-| Обновление ленты | `RefreshFeedUseCase` |
-| Правила Shorts | `core/domain/.../shorts/`, композиция — `DataModule.provideShortsDetector` |
-| Репозитории, мапперы, воркер | `:core:data` |
-| Схема БД | `:core:database`; меняя её, поднимайте версию, добавляйте миграцию, коммитьте `schemas/` |
-| HTTP, DTO, RSS | `:core:network`, фикстуры тестов в `src/test/resources` |
-| Тексты ошибок | `core/ui/.../error/ErrorMessages.kt` + `core/ui/src/main/res/values/strings.xml` |
-| Фейки для тестов | `:core:testing` |
-| Навигация между экранами | `app/.../navigation/UsefulYouTubeNavHost.kt` |
+| Add a dependency | `gradle/libs.versions.toml` (latest stable versions) |
+| Shared module configuration | `build-logic/convention/.../buildlogic/*ConventionPlugin.kt` |
+| Business logic, use cases | `:core:domain` (pure Kotlin) |
+| Feed refresh pipeline | `RefreshFeedUseCase` |
+| Shorts rules | `core/domain/.../shorts/`; composition in `DataModule.provideShortsDetector` |
+| Repositories, mappers, worker | `:core:data` |
+| Database schema | `:core:database`; on changes bump the version, add a migration, commit `schemas/` |
+| HTTP, DTOs, RSS | `:core:network`; test fixtures in `src/test/resources` |
+| User-facing error texts | `core/ui/.../error/ErrorMessages.kt` and `core/ui/src/main/res/values/strings.xml` |
+| Test fakes | `:core:testing` |
+| Navigation between screens | `app/.../navigation/UsefulYouTubeNavHost.kt` |
 
-## Согласованные решения (не пересматривать без владельца)
+## Known pitfalls
 
-- Shorts: длительность > 180 с → не Shorts; ≤ 180 с → решает HEAD `/shorts/{id}`; при неудаче
-  проверки — вердикт по длительности. P0D (трансляция, премьера) — не Shorts.
-- Видео без загруженных деталей скрыты, пока их вид не определён.
-- Добавление канала: id `UC…`, ссылки `/channel/UC…` и `@handle` (через `channels.list?forHandle=`).
-- Проверки только локальные (`./gradlew check`), без CI-сервиса.
-- Пакет и applicationId: `dev.satoshi.usefulyoutube`.
-- Утверждения в тестах через AssertK, RSS через xmlutil, Compose UI-тесты через Robolectric.
-- Одобренные дополнения: обновление ленты при открытии, плеер с `rel=0`, подтверждение
-  удаления канала, сворачиваемое описание, плеер сохраняется при повороте (`configChanges`).
-- Частичные сбои обновления (часть каналов) в UI не показываются.
-
-## Известные подводные камни
-
-- `nl.adaptivity.xmlutil.XmlException` наследуется от `IOException`. В `NetworkErrorMapper` её нужно
-  проверять раньше `IOException`, иначе ошибка разбора станет «нет сети».
-- В xmlutil 1.0 используйте `XML.v1 { policy { … } }`: `defaultPolicy` устарел и ломает сборку.
-- detekt 1.23 собран под Kotlin 2.0: в `QualityConventionPlugin` его конфигурации принудительно
-  выставлена версия `detektKotlin`. Не удаляйте это.
-- `failOnNoDiscoveredTests = false`: Hilt и Room генерируют тестовые исходники и в модулях без тестов.
-- `createComposeRule` берите из пакета `junit4.v2`, а `advanceUntilIdle` требует
+- `nl.adaptivity.xmlutil.XmlException` extends `IOException`. `NetworkErrorMapper` must check it before
+  `IOException`, otherwise parsing errors are reported as "no network".
+- With xmlutil 1.0 use `XML.v1 { policy { … } }`; `defaultPolicy` is deprecated and breaks the build.
+- detekt 1.23 is built against Kotlin 2.0. `QualityConventionPlugin` pins the Kotlin version of the
+  `detekt` configuration (`detektKotlin` in the catalog); keep it.
+- `failOnNoDiscoveredTests = false` is intentional: Hilt and Room generate test sources even in modules
+  without tests.
+- Use `createComposeRule` from `junit4.v2`; `advanceUntilIdle` needs
   `@OptIn(ExperimentalCoroutinesApi::class)`.
-- Тестам `:core:data`, создающим базу, нужен `testImplementation(libs.androidx.room.runtime)`.
-- В `PlayerViewModel` аргумент читается из `SavedStateHandle` по имени
-  `PlayerDestination.VIDEO_ID_ARGUMENT`. Оно должно совпадать с именем свойства `videoId`.
-- Стандартный инициализатор WorkManager удалён из манифеста. Не вызывайте `WorkManager.getInstance`
-  до `Application.onCreate`.
-- Ожидаемые значения в тестах (например, epoch-миллисекунды) вычисляйте, а не пишите по памяти.
+- Robolectric tests need `src/test/resources/robolectric.properties` with `sdk=35`.
+- `:core:data` tests that create the database need `testImplementation(libs.androidx.room.runtime)`.
+- `PlayerViewModel` reads its argument from `SavedStateHandle` by `PlayerDestination.VIDEO_ID_ARGUMENT`,
+  which must match the `videoId` property name.
+- The default WorkManager initializer is removed from the manifest; WorkManager is configured by
+  `UsefulYouTubeApplication` with `HiltWorkerFactory`.
+- The newest Android cmdline-tools redirect `sdkmanager` to the new Android CLI and may hang while
+  downloading it. Version 19.0 of cmdline-tools works; run `sdkmanager` with stdin closed (`</dev/null`).

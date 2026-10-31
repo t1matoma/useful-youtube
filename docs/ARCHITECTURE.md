@@ -1,0 +1,191 @@
+# Architecture
+
+Clean Architecture + MVVM with unidirectional data flow (UDF). Room is the single source of truth:
+the UI only reads from the database, and the network only updates it.
+
+## Modules
+
+```mermaid
+graph TD
+    app[":app"] --> feed[":feature:feed"]
+    app --> player[":feature:player"]
+    app --> channels[":feature:channels"]
+    app --> import[":feature:import"]
+    app --> data[":core:data"]
+    app --> ui[":core:ui"]
+
+    feed --> domain[":core:domain"]
+    player --> domain
+    channels --> domain
+    import --> domain
+    feed --> ui
+    player --> ui
+    channels --> ui
+    import --> ui
+
+    data --> domain
+    data --> database[":core:database"]
+    data --> network[":core:network"]
+    domain --> model[":core:model"]
+    database --> model
+    network --> model
+    ui --> model
+
+    testing[":core:testing"] -.-> domain
+```
+
+| Module | Type | Responsibility |
+|---|---|---|
+| `:app` | Android app | `Application` (Hilt, WorkManager), `MainActivity`, `UsefulYouTubeNavHost` |
+| `:core:model` | JVM | Domain models, `AppResult`, the `AppError` hierarchy |
+| `:core:domain` | JVM | Use cases, repository interfaces, `ShortsDetector`, channel input parsing |
+| `:core:data` | Android library | Repository implementations, mappers, CSV parser, worker, Hilt bindings |
+| `:core:database` | Android library | Room: entities, DAOs, exported schema (`schemas/`) |
+| `:core:network` | Android library | Retrofit (Data API), RSS parser (xmlutil), DTOs, network error mapping |
+| `:core:ui` | Android library | Theme, shared components (`LoadingContent`, `MessageContent`), error messages |
+| `:core:testing` | JVM | Fake repositories, `TestData`, `MainDispatcherRule`, `collectInBackground` |
+| `:feature:*` | Android library | Screens: `XViewModel`, `XUiState`, `XUiEvent`, `XScreen`, `XRoute`, navigation |
+
+Dependency rules:
+
+- Dependencies point inwards: feature → domain ← data. Feature modules never depend on each other;
+  `:app` connects screens through navigation callbacks.
+- `:core:model` and `:core:domain` are JVM modules, so Android dependencies cannot leak into them.
+  The domain only uses `javax.inject`/Dagger annotations (via `hilt-core`).
+- Feature modules do not know about `:core:data`, `:core:database` or `:core:network`.
+
+The package of `:feature:import` is `feature.subscriptionimport` because `import` is a Kotlin keyword.
+
+## Layers and data flow
+
+```
+UI (Compose)  ──onEvent(UiEvent)──▶  ViewModel  ──▶  UseCase  ──▶  Repository (interface, domain)
+     ▲                                  │                               │
+     └──────── StateFlow<UiState> ◀─────┘                               ▼
+                                                    OfflineFirst*Repository (data)
+                                                      │                 │
+                                               Room (Flow)       YouTubeNetworkDataSource
+```
+
+- Each ViewModel exposes one `StateFlow<UiState>` and receives events through `onEvent(UiEvent)`.
+- Screens are stateless: `XScreen(state, onEvent, …navigation callbacks)`. `XRoute` connects the screen
+  to the ViewModel with `hiltViewModel()` and `collectAsStateWithLifecycle()`.
+- UI state combines Room flows with local ViewModel state
+  (`combine(...).stateIn(WhileSubscribed(5 s))`).
+
+## Feed refresh
+
+`RefreshFeedUseCase` (domain) orchestrates the refresh:
+
+1. Loads the RSS feed of every channel in parallel, at most 8 requests at a time (`Semaphore`):
+   `https://www.youtube.com/feeds/videos.xml?channel_id={id}`.
+2. Stores new videos with `content_kind = UNCLASSIFIED` and `details_fetched = 0`;
+   existing rows are never overwritten.
+3. Requests `videos.list?part=contentDetails,snippet` for videos without details, in batches of 50 ids,
+   and stores the ISO 8601 duration and the full description.
+4. Runs videos that have details but no kind through `ShortsDetector` (also at most 8 at a time)
+   and stores the result in `content_kind`.
+
+Error handling:
+
+- A failure of one channel does not stop the refresh. The channel is reported in
+  `RefreshSummary.failedChannels` and not shown in the UI.
+- If every channel failed or the details request failed, the result is `AppResult.Failure(DataError)`.
+
+The feed shows only `REGULAR` and `LIVE_OR_PREMIERE`; `SHORT` and `UNCLASSIFIED` are hidden.
+Videos the Data API does not return (deleted or private) stay hidden, and their details are requested
+again on the next refresh.
+
+Refresh triggers:
+
+- opening the feed (`FeedViewModel.init`);
+- pull-to-refresh;
+- hourly in the background, only with a network connection (`FeedSyncScheduler` → `RefreshFeedWorker`).
+
+`RefreshFeedWorker` retries on temporary errors (no network, HTTP, unknown) and gives up on an invalid
+key, exceeded quota, `NotFound` or a parsing error.
+
+## Shorts detection
+
+The `ShortsDetector` strategy (`:core:domain/shorts`):
+
+| Class | Rule |
+|---|---|
+| `DurationShortsDetector` | `null` → `UNKNOWN`; `0` (`P0D`, live stream or premiere) → `NOT_SHORT`; ≤ 180 s → `SHORT`; otherwise `NOT_SHORT` |
+| `UrlShortsDetector` | `HEAD https://www.youtube.com/shorts/{id}` without following redirects: `200` → `SHORT`; redirect to `/watch` → `NOT_SHORT`; any other response or error → `UNKNOWN` |
+| `CompositeShortsDetector(screening, confirmation)` | The cheap screening runs first; only its `SHORT` verdict is confirmed by the expensive check. An `UNKNOWN` confirmation keeps the screening verdict |
+
+The app uses `Composite(Duration, Url)` (see `DataModule`). Videos longer than 3 minutes need no extra
+request, short regular videos are not lost, and if YouTube redirects to a cookie consent page the
+duration decides.
+
+`ClassifyVideoUseCase` maps the verdict to `VideoContentKind`: zero duration → `LIVE_OR_PREMIERE`,
+`SHORT` → `SHORT`, `NOT_SHORT` → `REGULAR`, `UNKNOWN` → `UNCLASSIFIED`.
+
+## Error model
+
+Exceptions never reach the UI. Operations that can fail return `AppResult<T, E>`:
+
+- `DataError`: `NoNetwork`, `InvalidApiKey`, `QuotaExceeded`, `NotFound`, `Http(code)`, `Parsing`, `Unknown`;
+- `ImportError`: `UnreadableFile`, `InvalidFormat`, `NoChannels`;
+- `ChannelError`: `InvalidInput`, `AlreadySubscribed`, `NotFound`, `Remote(DataError)`.
+
+`NetworkErrorMapper` converts exceptions and HTTP responses into `DataError`. It reads the reason of
+Google API errors from the response body (`errors[].reason`, `details[].reason`) and always rethrows
+`CancellationException`. User-facing texts come from `AppError.message()` in `:core:ui`.
+
+## Database
+
+Room, schema version 1, exported to `core/database/schemas/`.
+
+| Table | Columns |
+|---|---|
+| `channels` | `id` (PK), `title` |
+| `videos` | `id` (PK), `channel_id` (FK → channels, `ON DELETE CASCADE`), `title`, `description`, `published_at`, `duration_seconds`, `thumbnail_url`, `content_kind`, `details_fetched` |
+
+Indices: `channel_id`, `published_at`. Details and kinds are written with partial `@Update`s
+(`VideoDetailsUpdate`, `VideoContentKindUpdate`). Any schema change needs a version bump and a migration.
+
+## Channels and import
+
+- `ChannelInputParser` (domain) accepts `UC…` ids (24 characters), `@handle`, and the links
+  `youtube.com/channel/UC…` and `youtube.com/@handle` (with `m.`, `www.`, or no scheme).
+- A channel added by id is verified through its RSS feed, which also provides the title.
+  This costs no quota.
+- A channel added by handle is looked up with `channels.list?forHandle=`.
+- `TakeoutCsvParser` reads columns by position (Takeout localizes the header), and handles a BOM,
+  CRLF line endings, quoted fields and duplicates.
+
+## DI and threading
+
+- Hilt modules: `NetworkModule`, `DatabaseModule`, `DataModule`, `DispatchersModule`.
+  Use cases are created through `@Inject constructor`.
+- `@IoDispatcher` is injected into repositories and the file reader; ViewModels use `viewModelScope`.
+- WorkManager is initialized on demand: `Application` implements `Configuration.Provider` with
+  `HiltWorkerFactory`, and the default initializer is removed from the manifest.
+
+## Navigation and screens
+
+Navigation Compose with type-safe routes. Each feature module exports `XDestination` (`@Serializable`),
+`NavGraphBuilder.xScreen(...)` and, when other screens open it, `NavController.navigateToX()`.
+
+| Screen | State | Notes |
+|---|---|---|
+| Feed | sealed: `Loading`, `Empty`, `Error`, `Content` | refreshes on open, pull-to-refresh; an error over stored content is shown once in a snackbar |
+| Video | sealed: `Loading`, `NotFound`, `Content` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`) |
+| Channels | data class | inline error under the input, removal with confirmation |
+| Import | sealed: `Idle`, `Importing`, `Imported`, `Failed` | file picked with `OpenDocument` |
+
+## Testing
+
+| What | How |
+|---|---|
+| Use cases, `ShortsDetector`, input parser | JUnit + AssertK + fakes from `:core:testing` |
+| ViewModels | `MainDispatcherRule`, Turbine or `collectInBackground` + `advanceUntilIdle` |
+| DAOs, repositories | In-memory Room on Robolectric |
+| Network | MockWebServer with XML/JSON fixtures in `core/network/src/test/resources` |
+| CSV, mappers | Plain unit tests |
+| Compose | Robolectric + `createComposeRule` (v2): feed states |
+| WorkManager | `TestListenableWorkerBuilder`, `WorkManagerTestInitHelper` |
+
+Kover enforces at least 80% line coverage for `:core:domain` and `:core:data` as part of `check`.
