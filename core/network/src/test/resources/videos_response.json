@@ -1,0 +1,51 @@
+{
+  "kind": "youtube#videoListResponse",
+  "etag": "etag",
+  "items": [
+    {
+      "kind": "youtube#video",
+      "etag": "etag",
+      "id": "aaaaaaaaaaa",
+      "snippet": {
+        "publishedAt": "2026-10-30T16:00:06Z",
+        "channelId": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+        "title": "What's new in Android & Kotlin",
+        "description": "Full description",
+        "thumbnails": {
+          "default": { "url": "https://i.ytimg.com/vi/aaaaaaaaaaa/default.jpg", "width": 120, "height": 90 },
+          "high": { "url": "https://i.ytimg.com/vi/aaaaaaaaaaa/hqdefault.jpg", "width": 480, "height": 360 }
+        },
+        "channelTitle": "Google for Developers",
+        "tags": ["android"],
+        "categoryId": "28",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT12M31S",
+        "dimension": "2d",
+        "definition": "hd",
+        "caption": "true",
+        "licensedContent": false,
+        "projection": "rectangular"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "etag",
+      "id": "ccccccccccc",
+      "snippet": {
+        "publishedAt": "2026-10-31T18:00:00Z",
+        "channelId": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+        "title": "Upcoming premiere",
+        "description": "",
+        "thumbnails": {},
+        "channelTitle": "Google for Developers",
+        "liveBroadcastContent": "upcoming"
+      },
+      "contentDetails": {
+        "duration": "P0D"
+      }
+    }
+  ],
+  "pageInfo": { "totalResults": 2, "resultsPerPage": 2 }
+}
