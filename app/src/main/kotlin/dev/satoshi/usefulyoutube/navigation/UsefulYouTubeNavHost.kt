@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
+import dev.satoshi.usefulyoutube.feature.channels.navigation.channelsScreen
+import dev.satoshi.usefulyoutube.feature.channels.navigation.navigateToChannels
 import dev.satoshi.usefulyoutube.feature.feed.navigation.FeedDestination
 import dev.satoshi.usefulyoutube.feature.feed.navigation.feedScreen
 import dev.satoshi.usefulyoutube.feature.player.navigation.navigateToPlayer
@@ -17,10 +19,14 @@ fun UsefulYouTubeNavHost(modifier: Modifier = Modifier) {
     NavHost(navController = navController, startDestination = FeedDestination, modifier = modifier) {
         feedScreen(
             onVideoClick = navController::navigateToPlayer,
-            onOpenChannels = {},
+            onOpenChannels = navController::navigateToChannels,
             onImportSubscriptions = navController::navigateToImport,
         )
         playerScreen(onNavigateBack = navController::popBackStack)
+        channelsScreen(
+            onNavigateBack = navController::popBackStack,
+            onImportSubscriptions = navController::navigateToImport,
+        )
         importScreen(
             onNavigateBack = navController::popBackStack,
             onOpenFeed = { navController.popBackStack(FeedDestination, inclusive = false) },
