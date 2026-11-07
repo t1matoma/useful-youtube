@@ -30,6 +30,9 @@ graph TD
     playlists --> domain
     playlists --> ui
     app --> playlists
+    app --> history[":feature:history"]
+    history --> domain
+    history --> ui
     app --> auth
     auth --> domain
 
@@ -248,7 +251,7 @@ Navigation Compose with type-safe routes. Each feature module exports `XDestinat
 `NavGraphBuilder.xScreen(...)` and, when other screens open it, `NavController.navigateToX()`.
 
 `UsefulYouTubeNavHost` wraps the graph in a `Scaffold` with a bottom `NavigationBar` for the
-`TopLevelDestination`s (feed, search, playlists). The bar is shown only on these screens; the player, channels and
+`TopLevelDestination`s (feed, search, playlists, history). The bar is shown only on these screens; the player, channels and
 import open on top of them without it. Switching tabs saves and restores each tab's state
 (`popUpTo(start) { saveState = true }`, `restoreState = true`). The host consumes the bar's insets, so the
 screens' own scaffolds do not pad twice.
@@ -259,6 +262,7 @@ screens' own scaffolds do not pad twice.
 | Video | sealed: `Loading`, `NotFound`, `Content(queue)` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`); **Add channel** for videos of other channels; playlist queue with autoplay |
 | Channels | data class | inline error under the input, removal with confirmation |
 | Search | data class | query field, order chips, recent queries, results with **Show more**; reads the stored search |
+| History | data class | videos grouped by day (`groupByDay` with the injected `Clock` and `ZoneId`), remove, clear with confirmation |
 | Playlists | data class | app and YouTube sections, account state, sync with pull-to-refresh, consent, **New playlist** dialog |
 | Playlist | sealed: `Loading`, `NotFound`, `Content(dialog)` | videos; rename, delete and remove videos only for app playlists |
 | Import | sealed: `Idle`, `Importing`, `ConsentRequired`, `Imported`, `Failed` | file picked with `OpenDocument`; account import, see below |

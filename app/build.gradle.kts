@@ -31,6 +31,7 @@ dependencies {
     implementation(projects.feature.import)
     implementation(projects.feature.search)
     implementation(projects.feature.playlists)
+    implementation(projects.feature.history)
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)

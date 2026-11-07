@@ -23,6 +23,7 @@ import dev.satoshi.usefulyoutube.feature.channels.navigation.channelsScreen
 import dev.satoshi.usefulyoutube.feature.channels.navigation.navigateToChannels
 import dev.satoshi.usefulyoutube.feature.feed.navigation.FeedDestination
 import dev.satoshi.usefulyoutube.feature.feed.navigation.feedScreen
+import dev.satoshi.usefulyoutube.feature.history.navigation.historyScreen
 import dev.satoshi.usefulyoutube.feature.player.navigation.navigateToPlayer
 import dev.satoshi.usefulyoutube.feature.player.navigation.playerScreen
 import dev.satoshi.usefulyoutube.feature.playlists.navigation.navigateToPlaylist
@@ -67,6 +68,7 @@ fun UsefulYouTubeNavHost(modifier: Modifier = Modifier) {
             )
             searchScreen(onVideoClick = navController::navigateToPlayer)
             playlistsScreen(onPlaylistClick = navController::navigateToPlaylist)
+            historyScreen(onVideoClick = navController::navigateToPlayer)
             playlistScreen(
                 onNavigateBack = navController::popBackStack,
                 onPlay = navController::navigateToPlayer,

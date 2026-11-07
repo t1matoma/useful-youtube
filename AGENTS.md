@@ -146,7 +146,7 @@ Environment:
 | Theme, shared components, error texts | `:core:ui` |
 | Google account authorization (`AccountAuthorizer`, `AccountConsent`) | `:core:auth` |
 | Fakes, test data, `MainDispatcherRule`, `collectInBackground` | `:core:testing` |
-| Screens | `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import` (package `feature.subscriptionimport`), `:feature:search`, `:feature:playlists` |
+| Screens | `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import` (package `feature.subscriptionimport`), `:feature:search`, `:feature:playlists`, `:feature:history` |
 | Search pipeline | `SearchVideosUseCase`, `LoadMoreSearchResultsUseCase`, `OfflineFirstSearchRepository` |
 | Shared video card, thumbnail and duration formatting | `:core:ui` (`core.ui.video`) |
 | Text input dialog | `:core:ui` (`TextInputDialog`) |

@@ -4,4 +4,5 @@
     <string name="app_tab_feed">Лента</string>
     <string name="app_tab_search">Поиск</string>
     <string name="app_tab_playlists">Плейлисты</string>
+    <string name="app_tab_history">История</string>
 </resources>

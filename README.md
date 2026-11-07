@@ -10,6 +10,7 @@ You can also search all of YouTube explicitly. There is no backend: everything r
 - Feed of all subscription videos sorted by date, with pull-to-refresh and refresh on open.
 - Playlists on the device: create, rename, save any video from the player; your YouTube playlists,
   read-only and without Shorts. Playlists play in order with previous/next.
+- Local watch history grouped by day, with removing single videos and clearing.
 - Video search across YouTube, without Shorts: by relevance or by date, recent queries, adding the channel
   of a found video to your subscriptions.
 - Shorts filtering: by duration (≤ 180 s), confirmed by checking `youtube.com/shorts/{id}`.

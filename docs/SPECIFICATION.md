@@ -26,7 +26,8 @@ without Shorts and without recommendations, and plays them in the official embed
 
 ### Navigation
 
-A bottom navigation bar switches between **Feed**, **Search** and **Playlists**; each tab keeps its state. The video,
+A bottom navigation bar switches between **Feed**, **Search**, **Playlists** and **History**; each tab
+keeps its state. The video,
 playlist, channels and import screens open on top of the tabs without the bar.
 
 ### Subscriptions
@@ -114,6 +115,9 @@ Implemented as the `ShortsDetector` strategy:
   recently watched videos are kept.
 - The history keeps a copy of the video's data, so its videos play even if they left the feed, the search
   and the playlists.
+- The **History** tab groups videos by the local day they were watched (**Today**, **Yesterday**, then the
+  date), newest first. A video can be removed; **Clear history** removes all after confirmation. Tapping a
+  video opens it.
 
 ### Feed screen
 
@@ -148,7 +152,7 @@ Clean Architecture + MVVM with unidirectional data flow. Details: [ARCHITECTURE.
 
 - Modules: `:app`, `:core:model`, `:core:domain`, `:core:data`, `:core:database`, `:core:network`,
   `:core:ui`, `:core:auth`, `:core:testing`, `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import`,
-  `:feature:search`.
+  `:feature:search`, `:feature:playlists`, `:feature:history`.
 - Dependencies point inwards: feature → domain ← data. Feature modules do not depend on each other.
 - `:core:model` and `:core:domain` have no Android dependencies.
 - A ViewModel exposes a single `StateFlow<UiState>` and receives events through `onEvent(UiEvent)`.

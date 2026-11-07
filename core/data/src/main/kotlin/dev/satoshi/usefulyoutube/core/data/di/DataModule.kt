@@ -29,6 +29,7 @@ import dev.satoshi.usefulyoutube.core.domain.shorts.DurationShortsDetector
 import dev.satoshi.usefulyoutube.core.domain.shorts.ShortsDetector
 import dev.satoshi.usefulyoutube.core.domain.shorts.ShortsUrlProbe
 import dev.satoshi.usefulyoutube.core.domain.shorts.UrlShortsDetector
+import java.time.ZoneId
 import java.util.Locale
 import javax.inject.Singleton
 import kotlin.time.Clock
@@ -80,6 +81,10 @@ internal abstract class DataModule {
 
         @Provides
         fun provideClock(): Clock = Clock.System
+
+        /** Read every time, so the history groups days by the current time zone. */
+        @Provides
+        fun provideZoneId(): ZoneId = ZoneId.systemDefault()
 
         /** Duration screens out long videos; the `/shorts/` URL check confirms short ones. */
         @Provides
