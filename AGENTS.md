@@ -78,6 +78,8 @@ Environment:
   in-process Kotlin, 1 GB test JVMs) so the build fits in 8 GB of RAM.
   **Do not raise these values in the repository.** Prefer module-level checks while iterating.
 - The `youtube.api.key` property in `local.properties` is needed only to run the app, not for tests.
+- Importing from the YouTube account also needs an Android OAuth client in Google Cloud (package name +
+  debug SHA-1, see README). It can be verified only on a device or emulator with Google Play.
 
 ## 4. Recipes
 
@@ -142,6 +144,7 @@ Environment:
 | Room entities, DAOs, schema | `:core:database` |
 | Retrofit API, RSS parser, DTOs, error mapping | `:core:network` (fixtures in `src/test/resources`) |
 | Theme, shared components, error texts | `:core:ui` |
+| Google account authorization (`AccountAuthorizer`, `AccountConsent`) | `:core:auth` |
 | Fakes, test data, `MainDispatcherRule`, `collectInBackground` | `:core:testing` |
 | Screens | `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import` (package `feature.subscriptionimport`) |
 | Navigation graph, `Application`, manifest | `:app` |
@@ -164,6 +167,9 @@ Environment:
   `videoId` property name.
 - The default WorkManager initializer is removed from the manifest; `UsefulYouTubeApplication` provides
   the configuration with `HiltWorkerFactory`.
+- `AuthorizationClient` access tokens expire. Data API calls with a token must handle `DataError.Unauthorized`
+  by calling `AccountAuthorizer.clearAccessToken` and retrying once (see `ImportAccountSubscriptionsUseCase`).
+- `IntentSender` cannot be created in plain JVM tests; ViewModel tests that need one run on Robolectric.
 - The `import` keyword cannot be a package segment, so `:feature:import` uses `feature.subscriptionimport`.
 - Compute expected values in tests (for example epoch milliseconds) instead of writing them from memory.
 - The newest Android cmdline-tools may hang while redirecting `sdkmanager` to the new Android CLI.

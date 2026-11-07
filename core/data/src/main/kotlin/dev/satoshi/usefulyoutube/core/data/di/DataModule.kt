@@ -9,6 +9,8 @@ import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstChannelReposit
 import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstVideoRepository
 import dev.satoshi.usefulyoutube.core.data.shorts.NetworkShortsUrlProbe
 import dev.satoshi.usefulyoutube.core.data.subscriptions.ContentResolverSubscriptionsFileReader
+import dev.satoshi.usefulyoutube.core.data.subscriptions.NetworkAccountSubscriptionsReader
+import dev.satoshi.usefulyoutube.core.domain.repository.AccountSubscriptionsReader
 import dev.satoshi.usefulyoutube.core.domain.repository.ChannelRepository
 import dev.satoshi.usefulyoutube.core.domain.repository.SubscriptionsFileReader
 import dev.satoshi.usefulyoutube.core.domain.repository.VideoRepository
@@ -32,6 +34,9 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindSubscriptionsFileReader(reader: ContentResolverSubscriptionsFileReader): SubscriptionsFileReader
+
+    @Binds
+    abstract fun bindAccountSubscriptionsReader(reader: NetworkAccountSubscriptionsReader): AccountSubscriptionsReader
 
     @Binds
     abstract fun bindShortsUrlProbe(probe: NetworkShortsUrlProbe): ShortsUrlProbe

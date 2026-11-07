@@ -11,16 +11,26 @@ without Shorts and without recommendations, and plays them in the official embed
 ## Non-negotiable constraints
 
 - **No backend.** Everything runs on the device.
-- **Official, public sources only:** channel RSS feeds, YouTube Data API v3, the IFrame player.
+- **Official sources only:** channel RSS feeds, YouTube Data API v3 (with an API key, or with the user's
+  OAuth access token for their own account data), the IFrame player.
   No unofficial APIs, scraping of HTML pages or private endpoints.
 - **No recommendations.** The app shows only videos of channels the user subscribed to.
 - **Offline-first.** The UI always reads from the local database; the network only updates it.
 - **Secrets stay local.** The Data API key comes from `local.properties` → `BuildConfig` and is never committed.
+  OAuth needs no client secret or client id in the code: Google identifies the app by its package name and
+  signing certificate. Access tokens stay in Google Play services.
 
 ## Features
 
 ### Subscriptions
 
+- Import from the YouTube account: the user authorizes the app with Google (scope
+  `https://www.googleapis.com/auth/youtube`, full access, so that the same grant later covers playlists),
+  and all subscriptions are loaded with Data API `subscriptions.list?mine=true&part=snippet`, 50 per page,
+  following `nextPageToken` (1 quota unit per page). The import runs only when the user asks for it.
+  It only adds channels: already subscribed channels, including manually added ones, are kept, and channels
+  unsubscribed on YouTube are not removed. A token rejected with HTTP 401 is cleared and replaced once.
+  Requires Google Play services.
 - Import from Google Takeout `subscriptions.csv` (columns: Channel Id, Channel Url, Channel Title).
   Columns are read by position because Takeout localizes the header. Already subscribed channels are skipped.
 - Add a channel by id (`UC…`), by `@handle`, or by a link `youtube.com/channel/UC…` / `youtube.com/@handle`.
@@ -80,7 +90,7 @@ Implemented as the `ShortsDetector` strategy:
 Clean Architecture + MVVM with unidirectional data flow. Details: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 - Modules: `:app`, `:core:model`, `:core:domain`, `:core:data`, `:core:database`, `:core:network`,
-  `:core:ui`, `:core:testing`, `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import`.
+  `:core:ui`, `:core:auth`, `:core:testing`, `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import`.
 - Dependencies point inwards: feature → domain ← data. Feature modules do not depend on each other.
 - `:core:model` and `:core:domain` have no Android dependencies.
 - A ViewModel exposes a single `StateFlow<UiState>` and receives events through `onEvent(UiEvent)`.

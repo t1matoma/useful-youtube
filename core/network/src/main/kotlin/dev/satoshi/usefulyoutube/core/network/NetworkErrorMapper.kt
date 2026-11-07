@@ -36,6 +36,7 @@ internal class NetworkErrorMapper(
     fun fromStatus(code: Int): DataError =
         when (code) {
             HttpURLConnection.HTTP_NOT_FOUND -> DataError.NotFound
+            HttpURLConnection.HTTP_UNAUTHORIZED -> DataError.Unauthorized
             else -> DataError.Http(code)
         }
 

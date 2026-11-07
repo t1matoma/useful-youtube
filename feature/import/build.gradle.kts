@@ -6,3 +6,7 @@ android {
     // "import" is a Kotlin keyword, so the package uses a descriptive name instead.
     namespace = "dev.satoshi.usefulyoutube.feature.subscriptionimport"
 }
+
+dependencies {
+    implementation(projects.core.auth)
+}

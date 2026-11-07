@@ -202,6 +202,37 @@ class RetrofitYouTubeNetworkDataSourceTest {
         }
 
     @Test
+    fun `account subscriptions follow every page with bearer token`() =
+        runTest {
+            enqueue(code = 200, body = Fixtures.read("subscriptions_page_1.json"))
+            enqueue(code = 200, body = Fixtures.read("subscriptions_page_2.json"))
+
+            val result = dataSource.getMySubscriptions(accessToken = "access-token")
+
+            val first = server.takeRequest()
+            assertThat(first.url.encodedPath).isEqualTo("/youtube/v3/subscriptions")
+            assertThat(first.headers["Authorization"]).isEqualTo("Bearer access-token")
+            assertThat(first.url.queryParameter("mine")).isEqualTo("true")
+            assertThat(first.url.queryParameter("part")).isEqualTo("snippet")
+            assertThat(first.url.queryParameter("maxResults")).isEqualTo("50")
+            assertThat(first.url.queryParameter("pageToken")).isNull()
+            assertThat(server.takeRequest().url.queryParameter("pageToken")).isEqualTo("CAEQAA")
+            val snippets = (result as AppResult.Success).value.map { it.snippet }
+            assertThat(snippets.map { it.resourceId.channelId })
+                .containsExactly("UC_x5XG1OV2P6uZZ5FSM9Ttw", "UCVHFbqXqoYvEWM1Ddxl0QDg")
+            assertThat(snippets.map { it.title }).containsExactly("Google for Developers", "Android Developers")
+        }
+
+    @Test
+    fun `rejected access token is unauthorized`() =
+        runTest {
+            enqueue(code = 401, body = Fixtures.read("error_auth.json"))
+
+            assertThat(dataSource.getMySubscriptions(accessToken = "expired"))
+                .isEqualTo(AppResult.Failure(DataError.Unauthorized))
+        }
+
+    @Test
     fun `shorts url without redirect is a short`() =
         runTest {
             enqueue(code = 200)

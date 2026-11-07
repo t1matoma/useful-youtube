@@ -29,7 +29,13 @@ class RefreshFeedWorker
         private val DataError.isTemporary: Boolean
             get() =
                 when (this) {
-                    DataError.InvalidApiKey, DataError.QuotaExceeded, DataError.NotFound, DataError.Parsing -> false
+                    DataError.InvalidApiKey,
+                    DataError.Unauthorized,
+                    DataError.QuotaExceeded,
+                    DataError.NotFound,
+                    DataError.Parsing,
+                    -> false
+
                     DataError.NoNetwork, is DataError.Http, DataError.Unknown -> true
                 }
     }

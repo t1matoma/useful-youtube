@@ -1,16 +1,21 @@
 package dev.satoshi.usefulyoutube.feature.subscriptionimport
 
+import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -59,6 +65,17 @@ fun ImportScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri?.let { onEvent(ImportUiEvent.FileSelected(it.toString())) }
         }
+    val consentLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+            onEvent(ImportUiEvent.ConsentFinished(granted = result.resultCode == Activity.RESULT_OK))
+        }
+    if (state is ImportUiState.ConsentRequired) {
+        LaunchedEffect(state) {
+            consentLauncher.launch(IntentSenderRequest.Builder(state.consentScreen).build())
+            onEvent(ImportUiEvent.ConsentLaunched)
+        }
+    }
+    val isBusy = state == ImportUiState.Importing || state is ImportUiState.ConsentRequired
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -76,14 +93,28 @@ fun ImportScreen(
         },
     ) { innerPadding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(ContentPadding),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(ContentPadding),
             verticalArrangement = Arrangement.spacedBy(ItemSpacing),
         ) {
-            Text(stringResource(R.string.feature_import_instructions), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                stringResource(R.string.feature_import_account_description),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Button(
+                onClick = { onEvent(ImportUiEvent.AccountImportRequested) },
+                enabled = !isBusy,
+            ) {
+                Text(stringResource(R.string.feature_import_from_account))
+            }
             when (state) {
                 ImportUiState.Idle -> {}
 
-                ImportUiState.Importing -> {
+                ImportUiState.Importing, is ImportUiState.ConsentRequired -> {
                     CircularProgressIndicator()
                     Text(stringResource(R.string.feature_import_in_progress))
                 }
@@ -100,9 +131,11 @@ fun ImportScreen(
                     Text(state.error.message(), color = MaterialTheme.colorScheme.error)
                 }
             }
+            HorizontalDivider()
+            Text(stringResource(R.string.feature_import_instructions), style = MaterialTheme.typography.bodyLarge)
             OutlinedButton(
                 onClick = { filePicker.launch(CSV_MIME_TYPES) },
-                enabled = state != ImportUiState.Importing,
+                enabled = !isBusy,
             ) {
                 Text(stringResource(R.string.feature_import_choose_file))
             }

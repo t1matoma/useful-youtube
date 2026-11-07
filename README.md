@@ -6,7 +6,7 @@ There is no backend: everything runs on the device.
 
 ## Features
 
-- Import subscriptions from Google Takeout (`subscriptions.csv`).
+- Import all subscriptions from your YouTube account (Google sign-in), or from Google Takeout (`subscriptions.csv`).
 - Feed of all subscription videos sorted by date, with pull-to-refresh and refresh on open.
 - Shorts filtering: by duration (≤ 180 s), confirmed by checking `youtube.com/shorts/{id}`.
   Live streams and premieres are kept.
@@ -15,7 +15,8 @@ There is no backend: everything runs on the device.
 - Hourly background refresh when a network is available (WorkManager).
 - Offline-first: the UI always shows data from the local database.
 
-Only official, public data sources are used: channel RSS feeds, YouTube Data API v3 and the IFrame player.
+Only official data sources are used: channel RSS feeds, YouTube Data API v3 (with an API key, and with
+your OAuth authorization for your own subscriptions) and the IFrame player.
 
 > The UI is currently in Russian.
 
@@ -44,11 +45,27 @@ Quota usage:
 
 - a refresh costs 1 unit per 50 new videos (`videos.list`);
 - adding a channel by `@handle` costs 1 unit (`channels.list`);
+- importing from the account costs 1 unit per 50 subscriptions (`subscriptions.list`);
 - RSS feeds cost nothing.
 
 The default daily limit of 10,000 units is far more than personal use needs.
 
-### 2. Export your subscriptions
+### 2. Google sign-in (for importing from the account)
+
+Needed only for **Import from YouTube account**; the app works without it.
+
+1. In the same Cloud project open **Google Auth Platform** (APIs & Services → OAuth consent screen),
+   choose the **External** audience and keep the app in **Testing**. Add your Google account to
+   **Test users**.
+2. Create an OAuth client: Clients → Create client → **Android**, package name `dev.satoshi.usefulyoutube`,
+   and the SHA-1 of the signing certificate. For debug builds, get it with `./gradlew :app:signingReport`
+   (variant `debug`).
+3. Nothing goes into `local.properties`: Google matches the app by package name and SHA-1.
+
+While the app is in Testing, only test users can sign in and Google may ask to grant access again
+after 7 days. The device needs Google Play services.
+
+### 3. Or export your subscriptions with Takeout
 
 1. Open [takeout.google.com](https://takeout.google.com/), deselect everything and select
    **YouTube and YouTube Music**. In its options, keep only **subscriptions**.

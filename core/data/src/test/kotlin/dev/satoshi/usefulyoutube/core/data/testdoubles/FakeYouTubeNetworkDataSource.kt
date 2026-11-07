@@ -10,6 +10,9 @@ import dev.satoshi.usefulyoutube.core.network.model.RssEntryDto
 import dev.satoshi.usefulyoutube.core.network.model.RssFeedDto
 import dev.satoshi.usefulyoutube.core.network.model.RssMediaGroupDto
 import dev.satoshi.usefulyoutube.core.network.model.RssThumbnailDto
+import dev.satoshi.usefulyoutube.core.network.model.SubscriptionItemDto
+import dev.satoshi.usefulyoutube.core.network.model.SubscriptionResourceIdDto
+import dev.satoshi.usefulyoutube.core.network.model.SubscriptionSnippetDto
 import dev.satoshi.usefulyoutube.core.network.model.VideoContentDetailsDto
 import dev.satoshi.usefulyoutube.core.network.model.VideoItemDto
 import dev.satoshi.usefulyoutube.core.network.model.VideoSnippetDto
@@ -22,6 +25,7 @@ class FakeYouTubeNetworkDataSource : YouTubeNetworkDataSource {
     val channelsByHandle = mutableMapOf<String, ChannelItemDto>()
     var handleLookupError: DataError? = null
     val shortsUrls = mutableMapOf<String, AppResult<Boolean, DataError>>()
+    val subscriptionsByToken = mutableMapOf<String, AppResult<List<SubscriptionItemDto>, DataError>>()
 
     override suspend fun getChannelFeed(channelId: String): AppResult<RssFeedDto, DataError> =
         feeds[channelId] ?: AppResult.Failure(DataError.NotFound)
@@ -34,6 +38,9 @@ class FakeYouTubeNetworkDataSource : YouTubeNetworkDataSource {
 
     override suspend fun getChannelByHandle(handle: String): AppResult<ChannelItemDto?, DataError> =
         handleLookupError?.let { AppResult.Failure(it) } ?: AppResult.Success(channelsByHandle[handle])
+
+    override suspend fun getMySubscriptions(accessToken: String): AppResult<List<SubscriptionItemDto>, DataError> =
+        subscriptionsByToken[accessToken] ?: AppResult.Failure(DataError.Unauthorized)
 
     override suspend fun isShortsUrl(videoId: String): AppResult<Boolean, DataError> =
         shortsUrls[videoId] ?: AppResult.Failure(DataError.Unknown)
@@ -81,5 +88,12 @@ class FakeYouTubeNetworkDataSource : YouTubeNetworkDataSource {
             id: String,
             title: String,
         ) = ChannelItemDto(id = id, snippet = ChannelSnippetDto(title = title))
+
+        fun subscription(
+            channelId: String,
+            title: String,
+        ) = SubscriptionItemDto(
+            SubscriptionSnippetDto(title = title, resourceId = SubscriptionResourceIdDto(channelId)),
+        )
     }
 }

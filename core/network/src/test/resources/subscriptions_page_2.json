@@ -1,0 +1,21 @@
+{
+  "kind": "youtube#subscriptionListResponse",
+  "etag": "etag",
+  "prevPageToken": "CAEQAQ",
+  "pageInfo": { "totalResults": 2, "resultsPerPage": 1 },
+  "items": [
+    {
+      "kind": "youtube#subscription",
+      "etag": "etag",
+      "id": "subscription-2",
+      "snippet": {
+        "publishedAt": "2025-06-12T08:30:00Z",
+        "title": "Android Developers",
+        "description": "",
+        "resourceId": { "kind": "youtube#channel", "channelId": "UCVHFbqXqoYvEWM1Ddxl0QDg" },
+        "channelId": "UCsubscriberaaaaaaaaaaa",
+        "thumbnails": { "default": { "url": "https://yt3.ggpht.com/b" } }
+      }
+    }
+  ]
+}

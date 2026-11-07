@@ -4,9 +4,13 @@ import dev.satoshi.usefulyoutube.core.model.AppResult
 import dev.satoshi.usefulyoutube.core.model.DataError
 import dev.satoshi.usefulyoutube.core.network.model.ChannelItemDto
 import dev.satoshi.usefulyoutube.core.network.model.RssFeedDto
+import dev.satoshi.usefulyoutube.core.network.model.SubscriptionItemDto
 import dev.satoshi.usefulyoutube.core.network.model.VideoItemDto
 
-/** Access to the official public YouTube sources: channel RSS feeds, the Data API and Shorts URLs. */
+/**
+ * Access to the official YouTube sources: channel RSS feeds, the Data API (with an API key or the user's
+ * OAuth access token) and Shorts URLs.
+ */
 interface YouTubeNetworkDataSource {
     suspend fun getChannelFeed(channelId: String): AppResult<RssFeedDto, DataError>
 
@@ -14,6 +18,9 @@ interface YouTubeNetworkDataSource {
     suspend fun getVideoDetails(videoIds: List<String>): AppResult<List<VideoItemDto>, DataError>
 
     suspend fun getChannelByHandle(handle: String): AppResult<ChannelItemDto?, DataError>
+
+    /** Loads all subscriptions of the account that granted the [accessToken], following every page. */
+    suspend fun getMySubscriptions(accessToken: String): AppResult<List<SubscriptionItemDto>, DataError>
 
     /** `true` when `/shorts/{id}` opens without a redirect to the regular watch page. */
     suspend fun isShortsUrl(videoId: String): AppResult<Boolean, DataError>

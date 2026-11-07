@@ -1,0 +1,21 @@
+{
+  "kind": "youtube#subscriptionListResponse",
+  "etag": "etag",
+  "nextPageToken": "CAEQAA",
+  "pageInfo": { "totalResults": 2, "resultsPerPage": 1 },
+  "items": [
+    {
+      "kind": "youtube#subscription",
+      "etag": "etag",
+      "id": "subscription-1",
+      "snippet": {
+        "publishedAt": "2024-03-01T10:00:00Z",
+        "title": "Google for Developers",
+        "description": "Channel description",
+        "resourceId": { "kind": "youtube#channel", "channelId": "UC_x5XG1OV2P6uZZ5FSM9Ttw" },
+        "channelId": "UCsubscriberaaaaaaaaaaa",
+        "thumbnails": { "default": { "url": "https://yt3.ggpht.com/a" } }
+      }
+    }
+  ]
+}

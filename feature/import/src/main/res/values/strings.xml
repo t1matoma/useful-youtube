@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="feature_import_title">Импорт подписок</string>
-    <string name="feature_import_instructions">1. Откройте takeout.google.com и выберите только «YouTube и YouTube Music» → «подписки».\n2. Скачайте архив и распакуйте его.\n3. Выберите файл subscriptions.csv.</string>
+    <string name="feature_import_account_description">Войдите в аккаунт Google, и все подписки YouTube добавятся сразу. Уже добавленные каналы останутся как есть.</string>
+    <string name="feature_import_from_account">Импортировать из аккаунта YouTube</string>
+    <string name="feature_import_instructions">Или загрузите файл из Google Takeout:\n1. Откройте takeout.google.com и выберите только «YouTube и YouTube Music» → «подписки».\n2. Скачайте архив и распакуйте его.\n3. Выберите файл subscriptions.csv.</string>
     <string name="feature_import_choose_file">Выбрать subscriptions.csv</string>
     <string name="feature_import_in_progress">Импортируем подписки…</string>
     <string name="feature_import_success">Добавлено каналов: %1$d</string>

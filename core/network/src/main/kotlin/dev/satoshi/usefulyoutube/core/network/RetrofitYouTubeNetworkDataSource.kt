@@ -6,6 +6,7 @@ import dev.satoshi.usefulyoutube.core.network.api.YouTubeDataApi
 import dev.satoshi.usefulyoutube.core.network.di.ShortsProbeClient
 import dev.satoshi.usefulyoutube.core.network.model.ChannelItemDto
 import dev.satoshi.usefulyoutube.core.network.model.RssFeedDto
+import dev.satoshi.usefulyoutube.core.network.model.SubscriptionItemDto
 import dev.satoshi.usefulyoutube.core.network.model.VideoItemDto
 import dev.satoshi.usefulyoutube.core.network.rss.RssFeedParser
 import kotlinx.serialization.json.Json
@@ -52,6 +53,18 @@ internal class RetrofitYouTubeNetworkDataSource
         override suspend fun getChannelByHandle(handle: String): AppResult<ChannelItemDto?, DataError> =
             errorMapper.catching {
                 AppResult.Success(api.getChannelByHandle(handle = "@${handle.removePrefix("@")}").items.firstOrNull())
+            }
+
+        override suspend fun getMySubscriptions(accessToken: String): AppResult<List<SubscriptionItemDto>, DataError> =
+            errorMapper.catching {
+                val items = mutableListOf<SubscriptionItemDto>()
+                var pageToken: String? = null
+                do {
+                    val page = api.getMySubscriptions(authorization = "Bearer $accessToken", pageToken = pageToken)
+                    items += page.items
+                    pageToken = page.nextPageToken?.takeIf { it.isNotEmpty() }
+                } while (pageToken != null)
+                AppResult.Success(items)
             }
 
         override suspend fun isShortsUrl(videoId: String): AppResult<Boolean, DataError> =

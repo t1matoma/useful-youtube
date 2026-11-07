@@ -22,6 +22,9 @@ graph TD
     player --> ui
     channels --> ui
     import --> ui
+    import --> auth[":core:auth"]
+    app --> auth
+    auth --> domain
 
     data --> domain
     data --> database[":core:database"]
@@ -43,6 +46,7 @@ graph TD
 | `:core:database` | Android library | Room: entities, DAOs, exported schema (`schemas/`) |
 | `:core:network` | Android library | Retrofit (Data API), RSS parser (xmlutil), DTOs, network error mapping |
 | `:core:ui` | Android library | Theme, shared components (`LoadingContent`, `MessageContent`), error messages |
+| `:core:auth` | Android library | Google account authorization (`AuthorizationClient`): implements `AccountAuthorizer`, exposes `AccountConsent` |
 | `:core:testing` | JVM | Fake repositories, `TestData`, `MainDispatcherRule`, `collectInBackground` |
 | `:feature:*` | Android library | Screens: `XViewModel`, `XUiState`, `XUiEvent`, `XScreen`, `XRoute`, navigation |
 
@@ -52,7 +56,8 @@ Dependency rules:
   `:app` connects screens through navigation callbacks.
 - `:core:model` and `:core:domain` are JVM modules, so Android dependencies cannot leak into them.
   The domain only uses `javax.inject`/Dagger annotations (via `hilt-core`).
-- Feature modules do not know about `:core:data`, `:core:database` or `:core:network`.
+- Feature modules do not know about `:core:data`, `:core:database` or `:core:network`. A feature may use
+  `:core:auth` only to launch the Google consent screen, which needs an Android `IntentSender`.
 
 The package of `:feature:import` is `feature.subscriptionimport` because `import` is a Kotlin keyword.
 
@@ -103,7 +108,7 @@ Refresh triggers:
 - hourly in the background, only with a network connection (`FeedSyncScheduler` → `RefreshFeedWorker`).
 
 `RefreshFeedWorker` retries on temporary errors (no network, HTTP, unknown) and gives up on an invalid
-key, exceeded quota, `NotFound` or a parsing error.
+key, a rejected access token, exceeded quota, `NotFound` or a parsing error.
 
 ## Shorts detection
 
@@ -126,8 +131,9 @@ duration decides.
 
 Exceptions never reach the UI. Operations that can fail return `AppResult<T, E>`:
 
-- `DataError`: `NoNetwork`, `InvalidApiKey`, `QuotaExceeded`, `NotFound`, `Http(code)`, `Parsing`, `Unknown`;
-- `ImportError`: `UnreadableFile`, `InvalidFormat`, `NoChannels`;
+- `DataError`: `NoNetwork`, `InvalidApiKey`, `Unauthorized` (HTTP 401), `QuotaExceeded`, `NotFound`, `Http(code)`, `Parsing`, `Unknown`;
+- `ImportError`: `UnreadableFile`, `InvalidFormat`, `NoChannels`, `Auth(AuthError)`, `Remote(DataError)`;
+- `AuthError`: `ConsentRequired`, `Cancelled`, `Unavailable` (no Google Play services), `Failed`;
 - `ChannelError`: `InvalidInput`, `AlreadySubscribed`, `NotFound`, `Remote(DataError)`.
 
 `NetworkErrorMapper` converts exceptions and HTTP responses into `DataError`. It reads the reason of
@@ -153,12 +159,16 @@ Indices: `channel_id`, `published_at`. Details and kinds are written with partia
 - A channel added by id is verified through its RSS feed, which also provides the title.
   This costs no quota.
 - A channel added by handle is looked up with `channels.list?forHandle=`.
+- Account import (`ImportAccountSubscriptionsUseCase`): `AccountAuthorizer.getAccessToken()` →
+  `AccountSubscriptionsReader.read(token)` (all pages of `subscriptions.list?mine=true`) →
+  `ChannelRepository.importChannels`. On `DataError.Unauthorized` the token is cleared and the read is
+  repeated once.
 - `TakeoutCsvParser` reads columns by position (Takeout localizes the header), and handles a BOM,
   CRLF line endings, quoted fields and duplicates.
 
 ## DI and threading
 
-- Hilt modules: `NetworkModule`, `DatabaseModule`, `DataModule`, `DispatchersModule`.
+- Hilt modules: `NetworkModule`, `DatabaseModule`, `DataModule`, `DispatchersModule`, `AuthModule`.
   Use cases are created through `@Inject constructor`.
 - `@IoDispatcher` is injected into repositories and the file reader; ViewModels use `viewModelScope`.
 - WorkManager is initialized on demand: `Application` implements `Configuration.Provider` with
@@ -174,14 +184,29 @@ Navigation Compose with type-safe routes. Each feature module exports `XDestinat
 | Feed | sealed: `Loading`, `Empty`, `Error`, `Content` | refreshes on open, pull-to-refresh; an error over stored content is shown once in a snackbar |
 | Video | sealed: `Loading`, `NotFound`, `Content` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`) |
 | Channels | data class | inline error under the input, removal with confirmation |
-| Import | sealed: `Idle`, `Importing`, `Imported`, `Failed` | file picked with `OpenDocument` |
+| Import | sealed: `Idle`, `Importing`, `ConsentRequired`, `Imported`, `Failed` | file picked with `OpenDocument`; account import, see below |
+
+### Google account authorization
+
+`GoogleAccountAuthorization` (`:core:auth`) wraps `Identity.getAuthorizationClient`. No backend, refresh
+token or client id is involved: Google Play services cache and renew the access token, and a repeated
+`authorize()` returns it silently once the user has granted access.
+
+1. `ImportViewModel` runs `ImportAccountSubscriptionsUseCase`. Without a grant it fails with
+   `ImportError.Auth(AuthError.ConsentRequired)`.
+2. The ViewModel asks `AccountConsent.consentScreen()` for the `IntentSender` and emits
+   `ImportUiState.ConsentRequired`.
+3. `ImportScreen` launches it with `StartIntentSenderForResult` and sends `ConsentLaunched`, then
+   `ConsentFinished(granted)` with the result.
+4. If granted, the import runs once more; a consent that is still required is reported, not shown again.
 
 ## Testing
 
 | What | How |
 |---|---|
 | Use cases, `ShortsDetector`, input parser | JUnit + AssertK + fakes from `:core:testing` |
-| ViewModels | `MainDispatcherRule`, Turbine or `collectInBackground` + `advanceUntilIdle` |
+| ViewModels | `MainDispatcherRule`, Turbine or `collectInBackground` + `advanceUntilIdle`; Robolectric when the state holds an Android type (`ImportViewModel`) |
+| Google authorization | Status code mapping only; `AuthorizationClient` itself needs a device with Google Play |
 | DAOs, repositories | In-memory Room on Robolectric |
 | Network | MockWebServer with XML/JSON fixtures in `core/network/src/test/resources` |
 | CSV, mappers | Plain unit tests |
