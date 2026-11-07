@@ -29,6 +29,7 @@ dependencies {
     implementation(projects.feature.player)
     implementation(projects.feature.channels)
     implementation(projects.feature.import)
+    implementation(projects.feature.search)
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)

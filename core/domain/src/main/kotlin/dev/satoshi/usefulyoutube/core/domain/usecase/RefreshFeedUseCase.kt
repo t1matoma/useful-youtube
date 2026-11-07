@@ -56,17 +56,7 @@ class RefreshFeedUseCase
             }
 
         private suspend fun classifyNewVideos() =
-            coroutineScope {
-                val semaphore = Semaphore(MAXIMUM_CONCURRENT_REQUESTS)
-                val kinds =
-                    videoRepository
-                        .getUnclassifiedVideos()
-                        .map { candidate ->
-                            async { semaphore.withPermit { candidate.id to classifyVideo(candidate) } }
-                        }.awaitAll()
-                        .toMap()
-                videoRepository.saveContentKinds(kinds)
-            }
+            videoRepository.saveContentKinds(classifyVideo.classifyAll(videoRepository.getUnclassifiedVideos()))
 
         private companion object {
             const val MAXIMUM_CONCURRENT_REQUESTS = 8

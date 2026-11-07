@@ -1,0 +1,35 @@
+{
+  "kind": "youtube#searchListResponse",
+  "etag": "etag",
+  "nextPageToken": "CDIQAA",
+  "regionCode": "DE",
+  "pageInfo": { "totalResults": 1000000, "resultsPerPage": 50 },
+  "items": [
+    {
+      "kind": "youtube#searchResult",
+      "etag": "etag",
+      "id": { "kind": "youtube#video", "videoId": "aaaaaaaaaaa" },
+      "snippet": {
+        "publishedAt": "2026-10-30T16:00:06Z",
+        "channelId": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+        "title": "Kotlin coroutines in depth",
+        "description": "Short description…",
+        "channelTitle": "Google for Developers",
+        "liveBroadcastContent": "none"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "etag",
+      "id": { "kind": "youtube#video", "videoId": "ccccccccccc" },
+      "snippet": {
+        "publishedAt": "2026-10-29T10:00:00Z",
+        "channelId": "UCVHFbqXqoYvEWM1Ddxl0QDg",
+        "title": "Live: Android Dev Summit",
+        "description": "",
+        "channelTitle": "Android Developers",
+        "liveBroadcastContent": "upcoming"
+      }
+    }
+  ]
+}

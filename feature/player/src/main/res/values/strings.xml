@@ -4,4 +4,5 @@
     <string name="feature_player_not_found">Видео не найдено</string>
     <string name="feature_player_show_more">Показать полностью</string>
     <string name="feature_player_show_less">Свернуть</string>
+    <string name="feature_player_subscribe">Добавить канал в подписки</string>
 </resources>

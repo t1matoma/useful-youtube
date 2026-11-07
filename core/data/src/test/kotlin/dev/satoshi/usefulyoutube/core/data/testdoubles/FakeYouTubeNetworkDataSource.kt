@@ -2,6 +2,7 @@ package dev.satoshi.usefulyoutube.core.data.testdoubles
 
 import dev.satoshi.usefulyoutube.core.model.AppResult
 import dev.satoshi.usefulyoutube.core.model.DataError
+import dev.satoshi.usefulyoutube.core.network.VideoSearchRequest
 import dev.satoshi.usefulyoutube.core.network.YouTubeNetworkDataSource
 import dev.satoshi.usefulyoutube.core.network.model.ChannelItemDto
 import dev.satoshi.usefulyoutube.core.network.model.ChannelSnippetDto
@@ -10,6 +11,9 @@ import dev.satoshi.usefulyoutube.core.network.model.RssEntryDto
 import dev.satoshi.usefulyoutube.core.network.model.RssFeedDto
 import dev.satoshi.usefulyoutube.core.network.model.RssMediaGroupDto
 import dev.satoshi.usefulyoutube.core.network.model.RssThumbnailDto
+import dev.satoshi.usefulyoutube.core.network.model.SearchItemDto
+import dev.satoshi.usefulyoutube.core.network.model.SearchItemIdDto
+import dev.satoshi.usefulyoutube.core.network.model.SearchListResponseDto
 import dev.satoshi.usefulyoutube.core.network.model.SubscriptionItemDto
 import dev.satoshi.usefulyoutube.core.network.model.SubscriptionResourceIdDto
 import dev.satoshi.usefulyoutube.core.network.model.SubscriptionSnippetDto
@@ -25,6 +29,8 @@ class FakeYouTubeNetworkDataSource : YouTubeNetworkDataSource {
     val channelsByHandle = mutableMapOf<String, ChannelItemDto>()
     var handleLookupError: DataError? = null
     val shortsUrls = mutableMapOf<String, AppResult<Boolean, DataError>>()
+    val searchPages = mutableMapOf<String?, AppResult<SearchListResponseDto, DataError>>()
+    val searchRequests = mutableListOf<VideoSearchRequest>()
     val subscriptionsByToken = mutableMapOf<String, AppResult<List<SubscriptionItemDto>, DataError>>()
 
     override suspend fun getChannelFeed(channelId: String): AppResult<RssFeedDto, DataError> =
@@ -41,6 +47,11 @@ class FakeYouTubeNetworkDataSource : YouTubeNetworkDataSource {
 
     override suspend fun getMySubscriptions(accessToken: String): AppResult<List<SubscriptionItemDto>, DataError> =
         subscriptionsByToken[accessToken] ?: AppResult.Failure(DataError.Unauthorized)
+
+    override suspend fun searchVideos(request: VideoSearchRequest): AppResult<SearchListResponseDto, DataError> {
+        searchRequests += request
+        return searchPages[request.pageToken] ?: AppResult.Failure(DataError.Unknown)
+    }
 
     override suspend fun isShortsUrl(videoId: String): AppResult<Boolean, DataError> =
         shortsUrls[videoId] ?: AppResult.Failure(DataError.Unknown)
@@ -72,14 +83,16 @@ class FakeYouTubeNetworkDataSource : YouTubeNetworkDataSource {
             videoId: String,
             channelId: String,
             duration: String?,
+            publishedAt: String = "2026-10-30T16:00:06Z",
         ) = VideoItemDto(
             id = videoId,
             snippet =
                 VideoSnippetDto(
                     channelId = channelId,
+                    channelTitle = "Channel $channelId",
                     title = "API title $videoId",
                     description = "API description",
-                    publishedAt = "2026-10-30T16:00:06Z",
+                    publishedAt = publishedAt,
                 ),
             contentDetails = VideoContentDetailsDto(duration = duration),
         )
@@ -88,6 +101,16 @@ class FakeYouTubeNetworkDataSource : YouTubeNetworkDataSource {
             id: String,
             title: String,
         ) = ChannelItemDto(id = id, snippet = ChannelSnippetDto(title = title))
+
+        fun searchPage(
+            vararg videoIds: String,
+            nextPageToken: String? = null,
+        ) = AppResult.Success(
+            SearchListResponseDto(
+                items = videoIds.map { SearchItemDto(SearchItemIdDto(it)) },
+                nextPageToken = nextPageToken,
+            ),
+        )
 
         fun subscription(
             channelId: String,

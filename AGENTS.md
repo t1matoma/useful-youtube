@@ -146,7 +146,9 @@ Environment:
 | Theme, shared components, error texts | `:core:ui` |
 | Google account authorization (`AccountAuthorizer`, `AccountConsent`) | `:core:auth` |
 | Fakes, test data, `MainDispatcherRule`, `collectInBackground` | `:core:testing` |
-| Screens | `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import` (package `feature.subscriptionimport`) |
+| Screens | `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import` (package `feature.subscriptionimport`), `:feature:search` |
+| Search pipeline | `SearchVideosUseCase`, `LoadMoreSearchResultsUseCase`, `OfflineFirstSearchRepository` |
+| Shared video card and duration formatting | `:core:ui` (`core.ui.video`) |
 | Navigation graph, `Application`, manifest | `:app` |
 
 ## 6. Known pitfalls
@@ -171,6 +173,11 @@ Environment:
   by calling `AccountAuthorizer.clearAccessToken` and retrying once (see `ImportAccountSubscriptionsUseCase`).
 - `IntentSender` cannot be created in plain JVM tests; ViewModel tests that need one run on Robolectric.
 - The `import` keyword cannot be a package segment, so `:feature:import` uses `feature.subscriptionimport`.
+- `MigrationTestHelper` reads the schemas from the test assets; `:core:database` adds `schemas/` to them.
+  Run `:core:database:check` after a schema change so the new `N.json` is generated, and commit it.
+- detekt's `TooManyFunctions` (10 per class) also counts DAO methods; split a DAO by table instead of
+  suppressing it (`SearchDao`, `RecentSearchQueryDao`).
+- `search.list` costs 100 quota units per page. Never load search pages automatically.
 - Compute expected values in tests (for example epoch milliseconds) instead of writing them from memory.
 - The newest Android cmdline-tools may hang while redirecting `sdkmanager` to the new Android CLI.
   cmdline-tools 19.0 works; run `sdkmanager` with stdin closed (`</dev/null`).

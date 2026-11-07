@@ -52,9 +52,12 @@ internal fun VideoItemDto.toDetailsUpdate() =
         title = snippet.title,
         description = snippet.description,
         durationSeconds = contentDetails?.duration?.let(::parseIsoDuration)?.inWholeSeconds,
-        thumbnailUrl =
-            THUMBNAIL_PREFERENCE.firstNotNullOfOrNull { snippet.thumbnails[it]?.url } ?: defaultThumbnailUrl(id),
+        thumbnailUrl = bestThumbnailUrl(),
     )
+
+/** The largest available thumbnail. */
+internal fun VideoItemDto.bestThumbnailUrl(): String =
+    THUMBNAIL_PREFERENCE.firstNotNullOfOrNull { snippet.thumbnails[it]?.url } ?: defaultThumbnailUrl(id)
 
 internal fun UnclassifiedVideo.toShortsCandidate() =
     ShortsCandidate(id = VideoId(id), duration = durationSeconds?.seconds)

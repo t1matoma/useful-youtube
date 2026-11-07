@@ -6,6 +6,12 @@ plugins {
 
 android {
     namespace = "dev.satoshi.usefulyoutube.core.database"
+
+    // MigrationTestHelper reads the exported schemas from the test assets.
+    sourceSets
+        .getByName("test")
+        .assets.directories
+        .add("$projectDir/schemas")
 }
 
 dependencies {

@@ -6,12 +6,14 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstChannelRepository
+import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstSearchRepository
 import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstVideoRepository
 import dev.satoshi.usefulyoutube.core.data.shorts.NetworkShortsUrlProbe
 import dev.satoshi.usefulyoutube.core.data.subscriptions.ContentResolverSubscriptionsFileReader
 import dev.satoshi.usefulyoutube.core.data.subscriptions.NetworkAccountSubscriptionsReader
 import dev.satoshi.usefulyoutube.core.domain.repository.AccountSubscriptionsReader
 import dev.satoshi.usefulyoutube.core.domain.repository.ChannelRepository
+import dev.satoshi.usefulyoutube.core.domain.repository.SearchRepository
 import dev.satoshi.usefulyoutube.core.domain.repository.SubscriptionsFileReader
 import dev.satoshi.usefulyoutube.core.domain.repository.VideoRepository
 import dev.satoshi.usefulyoutube.core.domain.shorts.CompositeShortsDetector
@@ -19,6 +21,7 @@ import dev.satoshi.usefulyoutube.core.domain.shorts.DurationShortsDetector
 import dev.satoshi.usefulyoutube.core.domain.shorts.ShortsDetector
 import dev.satoshi.usefulyoutube.core.domain.shorts.ShortsUrlProbe
 import dev.satoshi.usefulyoutube.core.domain.shorts.UrlShortsDetector
+import java.util.Locale
 import javax.inject.Singleton
 
 @Module
@@ -33,6 +36,10 @@ internal abstract class DataModule {
     abstract fun bindVideoRepository(repository: OfflineFirstVideoRepository): VideoRepository
 
     @Binds
+    @Singleton
+    abstract fun bindSearchRepository(repository: OfflineFirstSearchRepository): SearchRepository
+
+    @Binds
     abstract fun bindSubscriptionsFileReader(reader: ContentResolverSubscriptionsFileReader): SubscriptionsFileReader
 
     @Binds
@@ -42,6 +49,10 @@ internal abstract class DataModule {
     abstract fun bindShortsUrlProbe(probe: NetworkShortsUrlProbe): ShortsUrlProbe
 
     companion object {
+        /** Read on every search, so a changed device language applies without a restart. */
+        @Provides
+        fun provideLocale(): Locale = Locale.getDefault()
+
         /** Duration screens out long videos; the `/shorts/` URL check confirms short ones. */
         @Provides
         fun provideShortsDetector(probe: ShortsUrlProbe): ShortsDetector =

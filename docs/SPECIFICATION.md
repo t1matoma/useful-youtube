@@ -14,7 +14,9 @@ without Shorts and without recommendations, and plays them in the official embed
 - **Official sources only:** channel RSS feeds, YouTube Data API v3 (with an API key, or with the user's
   OAuth access token for their own account data), the IFrame player.
   No unofficial APIs, scraping of HTML pages or private endpoints.
-- **No recommendations.** The app shows only videos of channels the user subscribed to.
+- **No recommendations.** The feed shows only videos of channels the user subscribed to. Videos of other
+  channels appear only as results of a search the user explicitly started; the app never suggests
+  videos on its own (no related videos, trends or autocomplete).
 - **Offline-first.** The UI always reads from the local database; the network only updates it.
 - **Secrets stay local.** The Data API key comes from `local.properties` → `BuildConfig` and is never committed.
   OAuth needs no client secret or client id in the code: Google identifies the app by its package name and
@@ -64,6 +66,21 @@ Implemented as the `ShortsDetector` strategy:
 - Live streams and premieres (duration `P0D`) are never Shorts and stay in the feed.
 - Videos whose details are not loaded yet are hidden until they are classified.
 
+### Search
+
+- Opened from the search icon of the feed. Searches all of YouTube with Data API
+  `search.list?type=video&part=id&maxResults=50` (100 quota units per page), with `regionCode` and
+  `relevanceLanguage` taken from the device locale.
+- Details of the found videos are loaded with `videos.list` (1 unit), and Shorts are removed with the same
+  detector as in the feed. Live streams and premieres stay. Videos without details are skipped.
+- Order: by relevance (default) or by date. Changing the order searches the current query again.
+- 50 results per page; the next page is loaded only with the **Show more** button.
+- Results and the query of the last search are stored in Room and shown again when the screen opens.
+  A new search replaces them; a failed search keeps them.
+- Up to 10 recent queries are stored locally and shown while the query field is empty; each one can be
+  searched again or deleted. A query is remembered even if its search fails.
+- No autocomplete: YouTube has no official API for suggestions.
+
 ### Feed screen
 
 - All regular videos and live streams/premieres of all subscriptions, newest first.
@@ -78,6 +95,9 @@ Implemented as the `ShortsDetector` strategy:
 - Title, channel, and a selectable description that can be expanded and collapsed.
 - Playback survives screen rotation.
 
+- For a video of a channel that is not subscribed (opened from the search), an **Add channel to
+  subscriptions** button. The channel id is verified through its RSS feed, so it costs no quota.
+
 ## Tech stack
 
 - Kotlin, Jetpack Compose, Material 3, minSdk 26, latest stable library versions.
@@ -90,7 +110,8 @@ Implemented as the `ShortsDetector` strategy:
 Clean Architecture + MVVM with unidirectional data flow. Details: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 - Modules: `:app`, `:core:model`, `:core:domain`, `:core:data`, `:core:database`, `:core:network`,
-  `:core:ui`, `:core:auth`, `:core:testing`, `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import`.
+  `:core:ui`, `:core:auth`, `:core:testing`, `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import`,
+  `:feature:search`.
 - Dependencies point inwards: feature → domain ← data. Feature modules do not depend on each other.
 - `:core:model` and `:core:domain` have no Android dependencies.
 - A ViewModel exposes a single `StateFlow<UiState>` and receives events through `onEvent(UiEvent)`.

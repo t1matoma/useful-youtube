@@ -1,0 +1,7 @@
+{
+  "kind": "youtube#searchListResponse",
+  "etag": "etag",
+  "regionCode": "DE",
+  "pageInfo": { "totalResults": 0, "resultsPerPage": 50 },
+  "items": []
+}

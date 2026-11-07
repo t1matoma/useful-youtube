@@ -11,6 +11,7 @@ graph TD
     app --> player[":feature:player"]
     app --> channels[":feature:channels"]
     app --> import[":feature:import"]
+    app --> search[":feature:search"]
     app --> data[":core:data"]
     app --> ui[":core:ui"]
 
@@ -18,6 +19,8 @@ graph TD
     player --> domain
     channels --> domain
     import --> domain
+    search --> domain
+    search --> ui
     feed --> ui
     player --> ui
     channels --> ui
@@ -142,15 +145,38 @@ Google API errors from the response body (`errors[].reason`, `details[].reason`)
 
 ## Database
 
-Room, schema version 1, exported to `core/database/schemas/`.
+Room, schema version 2, exported to `core/database/schemas/`. Version 2 added the search tables with
+`@AutoMigration(from = 1, to = 2)`; `MigrationTest` checks it against the exported schemas.
 
 | Table | Columns |
 |---|---|
 | `channels` | `id` (PK), `title` |
 | `videos` | `id` (PK), `channel_id` (FK → channels, `ON DELETE CASCADE`), `title`, `description`, `published_at`, `duration_seconds`, `thumbnail_url`, `content_kind`, `details_fetched` |
+| `search_results` | `video_id` (PK), `position`, `channel_id`, `channel_title`, `title`, `description`, `published_at`, `duration_seconds`, `thumbnail_url`, `content_kind`; no FK, because results come from any channel |
+| `search_session` | one row: `query_text`, `sort_order`, `next_page_token` (`NULL` when there are no more pages) |
+| `recent_search_queries` | `query_text` (PK), `used_order` (larger is more recent; at most 10 rows) |
 
-Indices: `channel_id`, `published_at`. Details and kinds are written with partial `@Update`s
+Indices: `videos.channel_id`, `videos.published_at`, `search_results.position`. Details and kinds are written with partial `@Update`s
 (`VideoDetailsUpdate`, `VideoContentKindUpdate`). Any schema change needs a version bump and a migration.
+
+## Search
+
+`SearchVideosUseCase` (domain) runs a search:
+
+1. Trims the query and saves it as a recent one.
+2. `SearchRepository.fetchPage` requests `search.list` (ids only) and then `videos.list` for the found ids,
+   keeping the search order and skipping videos without details.
+3. `ClassifyVideoUseCase.keepWatchable` (shared with the feed refresh) classifies the videos, at most 8 at
+   a time, and keeps `REGULAR` and `LIVE_OR_PREMIERE`.
+4. `saveFirstPage` replaces the stored search in one transaction.
+
+`LoadMoreSearchResultsUseCase` does the same for `search_session.next_page_token` and appends the page
+after the last `position`, skipping videos that are already stored. A failure keeps the token, so the user
+can retry.
+
+`ObserveVideoUseCase` combines the feed and the search results, so the player opens found videos too;
+a feed video wins when both have it. `SearchViewModel` shows the stored query and order until the user
+edits them, and keeps search and "show more" errors apart.
 
 ## Channels and import
 
@@ -182,8 +208,9 @@ Navigation Compose with type-safe routes. Each feature module exports `XDestinat
 | Screen | State | Notes |
 |---|---|---|
 | Feed | sealed: `Loading`, `Empty`, `Error`, `Content` | refreshes on open, pull-to-refresh; an error over stored content is shown once in a snackbar |
-| Video | sealed: `Loading`, `NotFound`, `Content` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`) |
+| Video | sealed: `Loading`, `NotFound`, `Content` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`); **Add channel** for videos of other channels |
 | Channels | data class | inline error under the input, removal with confirmation |
+| Search | data class | query field, order chips, recent queries, results with **Show more**; reads the stored search |
 | Import | sealed: `Idle`, `Importing`, `ConsentRequired`, `Imported`, `Failed` | file picked with `OpenDocument`; account import, see below |
 
 ### Google account authorization
@@ -208,9 +235,10 @@ token or client id is involved: Google Play services cache and renew the access 
 | ViewModels | `MainDispatcherRule`, Turbine or `collectInBackground` + `advanceUntilIdle`; Robolectric when the state holds an Android type (`ImportViewModel`) |
 | Google authorization | Status code mapping only; `AuthorizationClient` itself needs a device with Google Play |
 | DAOs, repositories | In-memory Room on Robolectric |
+| Migrations | `MigrationTestHelper` on Robolectric with the exported schemas as test assets |
 | Network | MockWebServer with XML/JSON fixtures in `core/network/src/test/resources` |
 | CSV, mappers | Plain unit tests |
-| Compose | Robolectric + `createComposeRule` (v2): feed states |
+| Compose | Robolectric + `createComposeRule` (v2): feed and search states |
 | WorkManager | `TestListenableWorkerBuilder`, `WorkManagerTestInitHelper` |
 
 Kover enforces at least 80% line coverage for `:core:domain` and `:core:data` as part of `check`.

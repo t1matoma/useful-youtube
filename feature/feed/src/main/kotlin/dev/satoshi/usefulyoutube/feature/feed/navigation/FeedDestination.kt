@@ -13,12 +13,14 @@ fun NavGraphBuilder.feedScreen(
     onVideoClick: (VideoId) -> Unit,
     onOpenChannels: () -> Unit,
     onImportSubscriptions: () -> Unit,
+    onOpenSearch: () -> Unit,
 ) {
     composable<FeedDestination> {
         FeedRoute(
             onVideoClick = onVideoClick,
             onOpenChannels = onOpenChannels,
             onImportSubscriptions = onImportSubscriptions,
+            onOpenSearch = onOpenSearch,
         )
     }
 }

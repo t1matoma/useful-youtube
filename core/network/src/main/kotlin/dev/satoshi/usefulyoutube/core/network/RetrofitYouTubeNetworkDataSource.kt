@@ -2,10 +2,12 @@ package dev.satoshi.usefulyoutube.core.network
 
 import dev.satoshi.usefulyoutube.core.model.AppResult
 import dev.satoshi.usefulyoutube.core.model.DataError
+import dev.satoshi.usefulyoutube.core.model.SearchOrder
 import dev.satoshi.usefulyoutube.core.network.api.YouTubeDataApi
 import dev.satoshi.usefulyoutube.core.network.di.ShortsProbeClient
 import dev.satoshi.usefulyoutube.core.network.model.ChannelItemDto
 import dev.satoshi.usefulyoutube.core.network.model.RssFeedDto
+import dev.satoshi.usefulyoutube.core.network.model.SearchListResponseDto
 import dev.satoshi.usefulyoutube.core.network.model.SubscriptionItemDto
 import dev.satoshi.usefulyoutube.core.network.model.VideoItemDto
 import dev.satoshi.usefulyoutube.core.network.rss.RssFeedParser
@@ -67,6 +69,19 @@ internal class RetrofitYouTubeNetworkDataSource
                 AppResult.Success(items)
             }
 
+        override suspend fun searchVideos(request: VideoSearchRequest): AppResult<SearchListResponseDto, DataError> =
+            errorMapper.catching {
+                AppResult.Success(
+                    api.searchVideos(
+                        query = request.query,
+                        order = request.order.apiValue,
+                        pageToken = request.pageToken,
+                        regionCode = request.regionCode,
+                        relevanceLanguage = request.relevanceLanguage,
+                    ),
+                )
+            }
+
         override suspend fun isShortsUrl(videoId: String): AppResult<Boolean, DataError> =
             errorMapper.catching {
                 val url = endpoints.websiteBaseUrl.resolve("shorts/$videoId") ?: error("Invalid video id: $videoId")
@@ -89,6 +104,13 @@ internal class RetrofitYouTubeNetworkDataSource
                     }
                 }
             }
+
+        private val SearchOrder.apiValue: String
+            get() =
+                when (this) {
+                    SearchOrder.RELEVANCE -> "relevance"
+                    SearchOrder.DATE -> "date"
+                }
 
         private companion object {
             const val LOCATION_HEADER = "Location"

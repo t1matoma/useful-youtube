@@ -9,6 +9,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.satoshi.usefulyoutube.core.database.UsefulYouTubeDatabase
 import dev.satoshi.usefulyoutube.core.database.dao.ChannelDao
+import dev.satoshi.usefulyoutube.core.database.dao.RecentSearchQueryDao
+import dev.satoshi.usefulyoutube.core.database.dao.SearchDao
 import dev.satoshi.usefulyoutube.core.database.dao.VideoDao
 import javax.inject.Singleton
 
@@ -29,4 +31,11 @@ internal object DatabaseModule {
 
     @Provides
     fun provideVideoDao(database: UsefulYouTubeDatabase): VideoDao = database.videoDao()
+
+    @Provides
+    fun provideSearchDao(database: UsefulYouTubeDatabase): SearchDao = database.searchDao()
+
+    @Provides
+    fun provideRecentSearchQueryDao(database: UsefulYouTubeDatabase): RecentSearchQueryDao =
+        database.recentSearchQueryDao()
 }

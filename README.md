@@ -2,12 +2,14 @@
 
 An Android app that shows a chronological feed of new videos from your YouTube subscriptions —
 **without Shorts and without recommendations** — and plays them in the official embedded player.
-There is no backend: everything runs on the device.
+You can also search all of YouTube explicitly. There is no backend: everything runs on the device.
 
 ## Features
 
 - Import all subscriptions from your YouTube account (Google sign-in), or from Google Takeout (`subscriptions.csv`).
 - Feed of all subscription videos sorted by date, with pull-to-refresh and refresh on open.
+- Video search across YouTube, without Shorts: by relevance or by date, recent queries, adding the channel
+  of a found video to your subscriptions.
 - Shorts filtering: by duration (≤ 180 s), confirmed by checking `youtube.com/shorts/{id}`.
   Live streams and premieres are kept.
 - Video screen: player, title, channel, description.
@@ -46,9 +48,11 @@ Quota usage:
 - a refresh costs 1 unit per 50 new videos (`videos.list`);
 - adding a channel by `@handle` costs 1 unit (`channels.list`);
 - importing from the account costs 1 unit per 50 subscriptions (`subscriptions.list`);
+- a search costs 101 units per page of 50 results (`search.list` + `videos.list`), so the daily limit
+  allows about 95 searches;
 - RSS feeds cost nothing.
 
-The default daily limit of 10,000 units is far more than personal use needs.
+Apart from searches, the default daily limit of 10,000 units is far more than personal use needs.
 
 ### 2. Google sign-in (for importing from the account)
 

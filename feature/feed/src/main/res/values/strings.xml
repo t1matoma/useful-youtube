@@ -4,4 +4,5 @@
     <string name="feature_feed_empty">Новых видео пока нет. Импортируйте подписки или добавьте каналы.</string>
     <string name="feature_feed_import">Импортировать подписки</string>
     <string name="feature_feed_channels">Каналы</string>
+    <string name="feature_feed_search">Поиск</string>
 </resources>

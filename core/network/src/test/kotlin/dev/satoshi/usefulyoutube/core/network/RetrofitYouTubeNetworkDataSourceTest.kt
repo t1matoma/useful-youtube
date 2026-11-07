@@ -8,6 +8,7 @@ import assertk.assertions.isNull
 import assertk.assertions.prop
 import dev.satoshi.usefulyoutube.core.model.AppResult
 import dev.satoshi.usefulyoutube.core.model.DataError
+import dev.satoshi.usefulyoutube.core.model.SearchOrder
 import dev.satoshi.usefulyoutube.core.network.api.ApiKeyInterceptor
 import dev.satoshi.usefulyoutube.core.network.api.YouTubeDataApi
 import dev.satoshi.usefulyoutube.core.network.model.RssFeedDto
@@ -230,6 +231,55 @@ class RetrofitYouTubeNetworkDataSourceTest {
 
             assertThat(dataSource.getMySubscriptions(accessToken = "expired"))
                 .isEqualTo(AppResult.Failure(DataError.Unauthorized))
+        }
+
+    @Test
+    fun `video search sends query, order and locale`() =
+        runTest {
+            enqueue(code = 200, body = Fixtures.read("search_response.json"))
+
+            val result =
+                dataSource.searchVideos(
+                    VideoSearchRequest(
+                        query = "kotlin coroutines",
+                        order = SearchOrder.DATE,
+                        regionCode = "DE",
+                        relevanceLanguage = "de",
+                    ),
+                )
+
+            val request = server.takeRequest()
+            assertThat(request.url.encodedPath).isEqualTo("/youtube/v3/search")
+            assertThat(request.url.queryParameter("q")).isEqualTo("kotlin coroutines")
+            assertThat(request.url.queryParameter("order")).isEqualTo("date")
+            assertThat(request.url.queryParameter("type")).isEqualTo("video")
+            assertThat(request.url.queryParameter("part")).isEqualTo("id")
+            assertThat(request.url.queryParameter("maxResults")).isEqualTo("50")
+            assertThat(request.url.queryParameter("regionCode")).isEqualTo("DE")
+            assertThat(request.url.queryParameter("relevanceLanguage")).isEqualTo("de")
+            assertThat(request.url.queryParameter("pageToken")).isNull()
+            assertThat(request.url.queryParameter("key")).isEqualTo(API_KEY)
+            val page = (result as AppResult.Success).value
+            assertThat(page.items.map { it.id.videoId }).containsExactly("aaaaaaaaaaa", "ccccccccccc")
+            assertThat(page.nextPageToken).isEqualTo("CDIQAA")
+        }
+
+    @Test
+    fun `next search page is requested by token without empty locale parameters`() =
+        runTest {
+            enqueue(code = 200, body = Fixtures.read("empty_search_response.json"))
+
+            val result =
+                dataSource.searchVideos(
+                    VideoSearchRequest(query = "q", order = SearchOrder.RELEVANCE, pageToken = "CDIQAA"),
+                )
+
+            val request = server.takeRequest()
+            assertThat(request.url.queryParameter("order")).isEqualTo("relevance")
+            assertThat(request.url.queryParameter("pageToken")).isEqualTo("CDIQAA")
+            assertThat(request.url.queryParameterNames.contains("regionCode")).isEqualTo(false)
+            assertThat(request.url.queryParameterNames.contains("relevanceLanguage")).isEqualTo(false)
+            assertThat((result as AppResult.Success).value.nextPageToken).isNull()
         }
 
     @Test
