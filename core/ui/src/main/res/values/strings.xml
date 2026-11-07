@@ -19,4 +19,6 @@
     <string name="core_ui_error_already_subscribed">Этот канал уже есть в подписках</string>
     <string name="core_ui_error_channel_not_found">Канал не найден</string>
     <string name="core_ui_retry">Повторить</string>
+    <string name="core_ui_video_live">Трансляция</string>
+    <string name="core_ui_video_subtitle">%1$s · %2$s</string>
 </resources>

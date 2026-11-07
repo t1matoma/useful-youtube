@@ -1,4 +1,4 @@
-package dev.satoshi.usefulyoutube.feature.feed.component
+package dev.satoshi.usefulyoutube.core.ui.video
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import dev.satoshi.usefulyoutube.core.model.Video
 import dev.satoshi.usefulyoutube.core.model.VideoContentKind
-import dev.satoshi.usefulyoutube.feature.feed.R
+import dev.satoshi.usefulyoutube.core.ui.R
 import kotlin.time.Clock
 
 private const val THUMBNAIL_ASPECT_RATIO = 16f / 9f
@@ -35,7 +35,7 @@ private val BadgeInnerPadding = 4.dp
 private val ThumbnailCornerRadius = 12.dp
 
 @Composable
-internal fun VideoCard(
+fun VideoCard(
     video: Video,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -77,7 +77,7 @@ internal fun VideoCard(
             modifier = Modifier.padding(top = CardPadding),
         )
         Text(
-            text = stringResource(R.string.feature_feed_video_subtitle, video.channelTitle, relativeDate(video)),
+            text = stringResource(R.string.core_ui_video_subtitle, video.channelTitle, relativeDate(video)),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -87,7 +87,7 @@ internal fun VideoCard(
 @Composable
 private fun durationLabel(video: Video): String? =
     when {
-        video.contentKind == VideoContentKind.LIVE_OR_PREMIERE -> stringResource(R.string.feature_feed_live)
+        video.contentKind == VideoContentKind.LIVE_OR_PREMIERE -> stringResource(R.string.core_ui_video_live)
         else -> video.duration?.let(::formatDuration)
     }
 

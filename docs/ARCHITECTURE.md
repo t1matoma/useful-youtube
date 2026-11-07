@@ -45,7 +45,7 @@ graph TD
 | `:core:data` | Android library | Repository implementations, mappers, CSV parser, worker, Hilt bindings |
 | `:core:database` | Android library | Room: entities, DAOs, exported schema (`schemas/`) |
 | `:core:network` | Android library | Retrofit (Data API), RSS parser (xmlutil), DTOs, network error mapping |
-| `:core:ui` | Android library | Theme, shared components (`LoadingContent`, `MessageContent`), error messages |
+| `:core:ui` | Android library | Theme, shared components (`LoadingContent`, `MessageContent`, `VideoCard`), duration formatting, error messages |
 | `:core:auth` | Android library | Google account authorization (`AuthorizationClient`): implements `AccountAuthorizer`, exposes `AccountConsent` |
 | `:core:testing` | JVM | Fake repositories, `TestData`, `MainDispatcherRule`, `collectInBackground` |
 | `:feature:*` | Android library | Screens: `XViewModel`, `XUiState`, `XUiEvent`, `XScreen`, `XRoute`, navigation |

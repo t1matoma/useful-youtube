@@ -32,7 +32,7 @@ import dev.satoshi.usefulyoutube.core.ui.component.LoadingContent
 import dev.satoshi.usefulyoutube.core.ui.component.MessageContent
 import dev.satoshi.usefulyoutube.core.ui.error.message
 import dev.satoshi.usefulyoutube.core.ui.theme.UsefulYouTubeTheme
-import dev.satoshi.usefulyoutube.feature.feed.component.VideoCard
+import dev.satoshi.usefulyoutube.core.ui.video.VideoCard
 import dev.satoshi.usefulyoutube.core.ui.R as CoreUiR
 
 @Composable

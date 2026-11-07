@@ -1,4 +1,4 @@
-package dev.satoshi.usefulyoutube.feature.feed.component
+package dev.satoshi.usefulyoutube.core.ui.video
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
