@@ -93,7 +93,17 @@ Implemented as the `ShortsDetector` strategy:
 - Any video can be saved: from the feed, the search or another playlist. The playlist keeps a copy of the
   video's data, so it plays even if the video is not in the feed or the last search anymore.
 - The **Playlists** tab lists the playlists by title with their video count and the first video's
-  thumbnail. A playlist screen lists its videos; tapping one opens the video.
+  thumbnail, in two sections: **My playlists** and **YouTube**. A playlist screen lists its videos; tapping
+  one opens the video. Pull-to-refresh loads the YouTube playlists again.
+- YouTube playlists are a read-only copy of the account's playlists. They are loaded when the tab opens
+  (once per screen) and on pull-to-refresh: `playlists.list?mine=true` (1 unit per 50 playlists),
+  `playlistItems.list` per playlist (1 unit per 50 videos) and `videos.list` for all their videos
+  (1 unit per 50). The account is the source of truth: playlists and videos removed on YouTube disappear.
+- Shorts are hidden in YouTube playlists with the feed's detector; videos classified on an earlier sync are
+  not checked again. Private and deleted videos have no details and are hidden. The stored copy stays
+  available offline and when a sync fails.
+- Without a connected account the YouTube section offers **Connect YouTube account**, which shows the
+  Google consent screen. "Watch later" is not available: the Data API does not return it.
 
 ### Feed screen
 

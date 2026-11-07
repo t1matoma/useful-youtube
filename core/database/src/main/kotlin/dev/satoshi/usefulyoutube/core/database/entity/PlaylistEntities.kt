@@ -6,6 +6,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import dev.satoshi.usefulyoutube.core.model.VideoContentKind
 
 /** [remoteId] is the YouTube playlist id of a mirrored account playlist and `null` for app playlists. */
 @Entity(tableName = "playlists", indices = [Index(value = ["remote_id"], unique = true)])
@@ -41,4 +42,21 @@ data class PlaylistSummary(
     @Embedded val playlist: PlaylistEntity,
     @ColumnInfo(name = "video_count") val videoCount: Int,
     @ColumnInfo(name = "thumbnail_url") val thumbnailUrl: String?,
+)
+
+/** A playlist of the YouTube account to store in the mirror; [videos] are in the playlist's order. */
+data class MirroredPlaylist(
+    val remoteId: String,
+    val title: String,
+    val videos: List<VideoSnapshot>,
+)
+
+data class MirroredPlaylistRef(
+    val id: Long,
+    @ColumnInfo(name = "remote_id") val remoteId: String,
+)
+
+data class StoredVideoKind(
+    @ColumnInfo(name = "video_id") val videoId: String,
+    @ColumnInfo(name = "content_kind") val contentKind: VideoContentKind,
 )

@@ -37,6 +37,17 @@ sealed interface AuthError : AppError {
     data object Failed : AuthError
 }
 
+/** Failures of reading data of the user's YouTube account. */
+sealed interface AccountError : AppError {
+    data class Auth(
+        val cause: AuthError,
+    ) : AccountError
+
+    data class Remote(
+        val cause: DataError,
+    ) : AccountError
+}
+
 /** Failures of importing subscriptions from a Google Takeout file or from the YouTube account. */
 sealed interface ImportError : AppError {
     data object UnreadableFile : ImportError

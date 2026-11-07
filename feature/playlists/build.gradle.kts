@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "dev.satoshi.usefulyoutube.feature.playlists"
 }
+
+dependencies {
+    implementation(projects.core.auth)
+}

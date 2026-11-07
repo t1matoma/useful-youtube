@@ -12,6 +12,8 @@ import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import dev.satoshi.usefulyoutube.core.model.AccountError
+import dev.satoshi.usefulyoutube.core.model.DataError
 import dev.satoshi.usefulyoutube.core.model.Playlist
 import dev.satoshi.usefulyoutube.core.model.PlaylistId
 import dev.satoshi.usefulyoutube.core.model.PlaylistSource
@@ -22,6 +24,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import dev.satoshi.usefulyoutube.core.ui.R as CoreUiR
 
 @RunWith(RobolectricTestRunner::class)
 class PlaylistScreensTest {
@@ -59,12 +62,39 @@ class PlaylistScreensTest {
     }
 
     @Test
-    fun `empty playlists screen explains how to start`() {
+    fun `empty playlists screen explains how to start and offers to connect the account`() {
+        val events = mutableListOf<PlaylistsUiEvent>()
         composeRule.setContent {
-            PlaylistsScreen(state = PlaylistsUiState(isLoading = false), onEvent = {}, onPlaylistClick = {})
+            PlaylistsScreen(
+                state = PlaylistsUiState(isLoading = false, account = AccountState.NOT_CONNECTED),
+                onEvent = { events += it },
+                onPlaylistClick = {},
+            )
         }
 
         composeRule.onNodeWithText(string(R.string.feature_playlists_empty)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.feature_playlists_connect)).performClick()
+
+        assertThat(events).containsExactly(PlaylistsUiEvent.ConnectAccountClicked)
+    }
+
+    @Test
+    fun `sync error is shown in the youtube section`() {
+        composeRule.setContent {
+            PlaylistsScreen(
+                state =
+                    PlaylistsUiState(
+                        isLoading = false,
+                        account = AccountState.CONNECTED,
+                        syncError = AccountError.Remote(DataError.QuotaExceeded),
+                    ),
+                onEvent = {},
+                onPlaylistClick = {},
+            )
+        }
+
+        composeRule.onNodeWithText(string(CoreUiR.string.core_ui_error_quota_exceeded)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.feature_playlists_youtube_empty)).assertIsDisplayed()
     }
 
     @Test

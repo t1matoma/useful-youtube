@@ -26,6 +26,10 @@ graph TD
     channels --> ui
     import --> ui
     import --> auth[":core:auth"]
+    playlists[":feature:playlists"] --> auth
+    playlists --> domain
+    playlists --> ui
+    app --> playlists
     app --> auth
     auth --> domain
 
@@ -60,7 +64,8 @@ Dependency rules:
 - `:core:model` and `:core:domain` are JVM modules, so Android dependencies cannot leak into them.
   The domain only uses `javax.inject`/Dagger annotations (via `hilt-core`).
 - Feature modules do not know about `:core:data`, `:core:database` or `:core:network`. A feature may use
-  `:core:auth` only to launch the Google consent screen, which needs an Android `IntentSender`.
+  `:core:auth` only to launch the Google consent screen, which needs an Android `IntentSender`
+  (`:feature:import`, `:feature:playlists`).
 
 The package of `:feature:import` is `feature.subscriptionimport` because `import` is a Kotlin keyword.
 
@@ -137,7 +142,8 @@ Exceptions never reach the UI. Operations that can fail return `AppResult<T, E>`
 - `DataError`: `NoNetwork`, `InvalidApiKey`, `Unauthorized` (HTTP 401), `QuotaExceeded`, `NotFound`, `Http(code)`, `Parsing`, `Unknown`;
 - `ImportError`: `UnreadableFile`, `InvalidFormat`, `NoChannels`, `Auth(AuthError)`, `Remote(DataError)`;
 - `AuthError`: `ConsentRequired`, `Cancelled`, `Unavailable` (no Google Play services), `Failed`;
-- `ChannelError`: `InvalidInput`, `AlreadySubscribed`, `NotFound`, `Remote(DataError)`.
+- `ChannelError`: `InvalidInput`, `AlreadySubscribed`, `NotFound`, `Remote(DataError)`;
+- `AccountError`: `Auth(AuthError)`, `Remote(DataError)` for reading account data.
 
 `NetworkErrorMapper` converts exceptions and HTTP responses into `DataError`. It reads the reason of
 Google API errors from the response body (`errors[].reason`, `details[].reason`) and always rethrows
@@ -187,7 +193,15 @@ edits them, and keeps search and "show more" errors apart.
 ## Playlists
 
 `PlaylistRepository` (domain) serves app playlists and, read-only, mirrored YouTube playlists
-(`PlaylistSource`). `ObserveVideoUseCase` also looks into `playlist_items`, so the player opens saved videos
+(`PlaylistSource`). `MirroredPlaylistRepository` writes the mirror.
+
+`SyncAccountPlaylistsUseCase` runs `AccountPlaylistsReader.read` (all playlists, their video ids and one
+`videos.list` for all videos) through `AccountAuthorizer.withAccessToken`, which replaces a token rejected
+with HTTP 401 once (also used by the subscription import). It classifies only videos whose kind the mirror
+does not know yet, keeps watchable ones and replaces the mirror in one transaction
+(`MirroredPlaylistDao.replaceAll`): playlists keep their local ids, missing ones are deleted with their
+videos. `PlaylistsViewModel` syncs once on creation and on pull-to-refresh; `AuthError.ConsentRequired`
+means "not connected", and **Connect** uses `AccountConsent` like the import screen. `ObserveVideoUseCase` also looks into `playlist_items`, so the player opens saved videos
 of any channel.
 
 The player's **Save to playlist** sheet has its own `SaveToPlaylistViewModel` in `:feature:player`
@@ -233,7 +247,7 @@ screens' own scaffolds do not pad twice.
 | Video | sealed: `Loading`, `NotFound`, `Content` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`); **Add channel** for videos of other channels |
 | Channels | data class | inline error under the input, removal with confirmation |
 | Search | data class | query field, order chips, recent queries, results with **Show more**; reads the stored search |
-| Playlists | data class | app playlists, **New playlist** dialog |
+| Playlists | data class | app and YouTube sections, account state, sync with pull-to-refresh, consent, **New playlist** dialog |
 | Playlist | sealed: `Loading`, `NotFound`, `Content(dialog)` | videos; rename, delete and remove videos only for app playlists |
 | Import | sealed: `Idle`, `Importing`, `ConsentRequired`, `Imported`, `Failed` | file picked with `OpenDocument`; account import, see below |
 

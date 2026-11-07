@@ -1,0 +1,32 @@
+{
+  "kind": "youtube#playlistListResponse",
+  "etag": "etag",
+  "pageInfo": { "totalResults": 2, "resultsPerPage": 50 },
+  "items": [
+    {
+      "kind": "youtube#playlist",
+      "etag": "etag",
+      "id": "PLaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "snippet": {
+        "publishedAt": "2025-01-10T09:00:00Z",
+        "channelId": "UCsubscriberaaaaaaaaaaa",
+        "title": "Kotlin talks",
+        "description": "",
+        "thumbnails": { "default": { "url": "https://i.ytimg.com/vi/aaaaaaaaaaa/default.jpg" } },
+        "channelTitle": "Me"
+      }
+    },
+    {
+      "kind": "youtube#playlist",
+      "etag": "etag",
+      "id": "PLbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "snippet": {
+        "publishedAt": "2025-02-10T09:00:00Z",
+        "channelId": "UCsubscriberaaaaaaaaaaa",
+        "title": "Music",
+        "description": "Evening",
+        "channelTitle": "Me"
+      }
+    }
+  ]
+}

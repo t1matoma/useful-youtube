@@ -1,0 +1,14 @@
+{
+  "kind": "youtube#playlistItemListResponse",
+  "etag": "etag",
+  "prevPageToken": "EAEaBlBUOkNBSQ",
+  "pageInfo": { "totalResults": 3, "resultsPerPage": 2 },
+  "items": [
+    {
+      "kind": "youtube#playlistItem",
+      "etag": "etag",
+      "id": "UExjY2Nj",
+      "contentDetails": { "videoId": "ccccccccccc", "videoPublishedAt": "2026-10-29T10:00:00Z" }
+    }
+  ]
+}

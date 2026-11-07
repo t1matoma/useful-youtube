@@ -6,6 +6,8 @@ import dev.satoshi.usefulyoutube.core.network.VideoSearchRequest
 import dev.satoshi.usefulyoutube.core.network.YouTubeNetworkDataSource
 import dev.satoshi.usefulyoutube.core.network.model.ChannelItemDto
 import dev.satoshi.usefulyoutube.core.network.model.ChannelSnippetDto
+import dev.satoshi.usefulyoutube.core.network.model.PlaylistDto
+import dev.satoshi.usefulyoutube.core.network.model.PlaylistSnippetDto
 import dev.satoshi.usefulyoutube.core.network.model.RssAuthorDto
 import dev.satoshi.usefulyoutube.core.network.model.RssEntryDto
 import dev.satoshi.usefulyoutube.core.network.model.RssFeedDto
@@ -31,6 +33,8 @@ class FakeYouTubeNetworkDataSource : YouTubeNetworkDataSource {
     val shortsUrls = mutableMapOf<String, AppResult<Boolean, DataError>>()
     val searchPages = mutableMapOf<String?, AppResult<SearchListResponseDto, DataError>>()
     val searchRequests = mutableListOf<VideoSearchRequest>()
+    var playlistsResult: AppResult<List<PlaylistDto>, DataError> = AppResult.Success(emptyList())
+    val playlistVideoIds = mutableMapOf<String, AppResult<List<String>, DataError>>()
     val subscriptionsByToken = mutableMapOf<String, AppResult<List<SubscriptionItemDto>, DataError>>()
 
     override suspend fun getChannelFeed(channelId: String): AppResult<RssFeedDto, DataError> =
@@ -47,6 +51,13 @@ class FakeYouTubeNetworkDataSource : YouTubeNetworkDataSource {
 
     override suspend fun getMySubscriptions(accessToken: String): AppResult<List<SubscriptionItemDto>, DataError> =
         subscriptionsByToken[accessToken] ?: AppResult.Failure(DataError.Unauthorized)
+
+    override suspend fun getMyPlaylists(accessToken: String): AppResult<List<PlaylistDto>, DataError> = playlistsResult
+
+    override suspend fun getPlaylistVideoIds(
+        accessToken: String,
+        playlistId: String,
+    ): AppResult<List<String>, DataError> = playlistVideoIds[playlistId] ?: AppResult.Success(emptyList())
 
     override suspend fun searchVideos(request: VideoSearchRequest): AppResult<SearchListResponseDto, DataError> {
         searchRequests += request
@@ -111,6 +122,11 @@ class FakeYouTubeNetworkDataSource : YouTubeNetworkDataSource {
                 nextPageToken = nextPageToken,
             ),
         )
+
+        fun playlist(
+            id: String,
+            title: String,
+        ) = PlaylistDto(id = id, snippet = PlaylistSnippetDto(title = title))
 
         fun subscription(
             channelId: String,

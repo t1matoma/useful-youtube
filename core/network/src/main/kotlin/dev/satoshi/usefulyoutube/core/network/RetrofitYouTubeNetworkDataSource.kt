@@ -6,6 +6,7 @@ import dev.satoshi.usefulyoutube.core.model.SearchOrder
 import dev.satoshi.usefulyoutube.core.network.api.YouTubeDataApi
 import dev.satoshi.usefulyoutube.core.network.di.ShortsProbeClient
 import dev.satoshi.usefulyoutube.core.network.model.ChannelItemDto
+import dev.satoshi.usefulyoutube.core.network.model.PlaylistDto
 import dev.satoshi.usefulyoutube.core.network.model.RssFeedDto
 import dev.satoshi.usefulyoutube.core.network.model.SearchListResponseDto
 import dev.satoshi.usefulyoutube.core.network.model.SubscriptionItemDto
@@ -59,15 +60,49 @@ internal class RetrofitYouTubeNetworkDataSource
 
         override suspend fun getMySubscriptions(accessToken: String): AppResult<List<SubscriptionItemDto>, DataError> =
             errorMapper.catching {
-                val items = mutableListOf<SubscriptionItemDto>()
-                var pageToken: String? = null
-                do {
-                    val page = api.getMySubscriptions(authorization = "Bearer $accessToken", pageToken = pageToken)
-                    items += page.items
-                    pageToken = page.nextPageToken?.takeIf { it.isNotEmpty() }
-                } while (pageToken != null)
-                AppResult.Success(items)
+                AppResult.Success(
+                    allPages { pageToken ->
+                        api.getMySubscriptions(bearer(accessToken), pageToken).let { it.items to it.nextPageToken }
+                    },
+                )
             }
+
+        override suspend fun getMyPlaylists(accessToken: String): AppResult<List<PlaylistDto>, DataError> =
+            errorMapper.catching {
+                AppResult.Success(
+                    allPages { pageToken ->
+                        api.getMyPlaylists(bearer(accessToken), pageToken).let { it.items to it.nextPageToken }
+                    },
+                )
+            }
+
+        override suspend fun getPlaylistVideoIds(
+            accessToken: String,
+            playlistId: String,
+        ): AppResult<List<String>, DataError> =
+            errorMapper.catching {
+                AppResult.Success(
+                    allPages { pageToken ->
+                        api
+                            .getPlaylistItems(bearer(accessToken), playlistId, pageToken)
+                            .let { page -> page.items.map { it.contentDetails.videoId } to page.nextPageToken }
+                    },
+                )
+            }
+
+        /** Loads pages until the Data API returns no `nextPageToken`. */
+        private suspend fun <T> allPages(loadPage: suspend (pageToken: String?) -> Pair<List<T>, String?>): List<T> {
+            val items = mutableListOf<T>()
+            var pageToken: String? = null
+            do {
+                val (pageItems, nextPageToken) = loadPage(pageToken)
+                items += pageItems
+                pageToken = nextPageToken?.takeIf { it.isNotEmpty() }
+            } while (pageToken != null)
+            return items
+        }
+
+        private fun bearer(accessToken: String) = "Bearer $accessToken"
 
         override suspend fun searchVideos(request: VideoSearchRequest): AppResult<SearchListResponseDto, DataError> =
             errorMapper.catching {

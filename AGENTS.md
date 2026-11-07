@@ -170,14 +170,15 @@ Environment:
   `videoId` property name.
 - The default WorkManager initializer is removed from the manifest; `UsefulYouTubeApplication` provides
   the configuration with `HiltWorkerFactory`.
-- `AuthorizationClient` access tokens expire. Data API calls with a token must handle `DataError.Unauthorized`
-  by calling `AccountAuthorizer.clearAccessToken` and retrying once (see `ImportAccountSubscriptionsUseCase`).
+- `AuthorizationClient` access tokens expire. Run Data API calls with a token through
+  `AccountAuthorizer.withAccessToken`, which clears a rejected token and retries once.
 - `IntentSender` cannot be created in plain JVM tests; ViewModel tests that need one run on Robolectric.
 - The `import` keyword cannot be a package segment, so `:feature:import` uses `feature.subscriptionimport`.
 - `MigrationTestHelper` reads the schemas from the test assets; `:core:database` adds `schemas/` to them.
   Run `:core:database:check` after a schema change so the new `N.json` is generated, and commit it.
-- detekt's `TooManyFunctions` (10 per class) also counts DAO methods; split a DAO by table instead of
-  suppressing it (`SearchDao`, `RecentSearchQueryDao`).
+- detekt's `TooManyFunctions` (10 per class or interface) also counts DAO, repository and fake methods;
+  split by responsibility instead of suppressing it (`SearchDao`/`RecentSearchQueryDao`,
+  `PlaylistRepository`/`MirroredPlaylistRepository`).
 - `search.list` costs 100 quota units per page. Never load search pages automatically.
 - Create ViewModels inside the test or `by lazy`, not as a field initializer: `viewModelScope` captures
   `Dispatchers.Main.immediate` when the ViewModel is created, before `MainDispatcherRule` replaces it.

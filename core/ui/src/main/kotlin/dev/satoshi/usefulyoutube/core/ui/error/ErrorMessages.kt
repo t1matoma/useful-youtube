@@ -2,6 +2,7 @@ package dev.satoshi.usefulyoutube.core.ui.error
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import dev.satoshi.usefulyoutube.core.model.AccountError
 import dev.satoshi.usefulyoutube.core.model.AppError
 import dev.satoshi.usefulyoutube.core.model.AuthError
 import dev.satoshi.usefulyoutube.core.model.ChannelError
@@ -17,6 +18,8 @@ fun AppError.message(): String =
         is ImportError -> importErrorMessage(this)
         is ChannelError -> channelErrorMessage(this)
         is AuthError -> authErrorMessage(this)
+        is AccountError.Auth -> authErrorMessage(cause)
+        is AccountError.Remote -> dataErrorMessage(cause)
     }
 
 @Composable

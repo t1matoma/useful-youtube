@@ -2,7 +2,11 @@
 <resources>
     <string name="feature_playlists_title">Плейлисты</string>
     <string name="feature_playlists_local">Мои плейлисты</string>
-    <string name="feature_playlists_empty">Плейлистов пока нет. Создайте плейлист или сохраните видео из плеера.</string>
+    <string name="feature_playlists_empty">Своих плейлистов пока нет. Создайте плейлист кнопкой «+» или сохраните видео из плеера.</string>
+    <string name="feature_playlists_youtube">YouTube</string>
+    <string name="feature_playlists_youtube_empty">В аккаунте нет плейлистов</string>
+    <string name="feature_playlists_connect_hint">Подключите аккаунт, чтобы видеть свои плейлисты YouTube. Они доступны только для просмотра.</string>
+    <string name="feature_playlists_connect">Подключить аккаунт YouTube</string>
     <string name="feature_playlists_video_count">Видео: %1$d</string>
     <string name="feature_playlists_create">Новый плейлист</string>
     <string name="feature_playlists_create_confirm">Создать</string>

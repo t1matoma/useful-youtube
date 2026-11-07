@@ -4,6 +4,7 @@ import dev.satoshi.usefulyoutube.core.model.AppResult
 import dev.satoshi.usefulyoutube.core.model.DataError
 import dev.satoshi.usefulyoutube.core.model.SearchOrder
 import dev.satoshi.usefulyoutube.core.network.model.ChannelItemDto
+import dev.satoshi.usefulyoutube.core.network.model.PlaylistDto
 import dev.satoshi.usefulyoutube.core.network.model.RssFeedDto
 import dev.satoshi.usefulyoutube.core.network.model.SearchListResponseDto
 import dev.satoshi.usefulyoutube.core.network.model.SubscriptionItemDto
@@ -23,6 +24,15 @@ interface YouTubeNetworkDataSource {
 
     /** Loads all subscriptions of the account that granted the [accessToken], following every page. */
     suspend fun getMySubscriptions(accessToken: String): AppResult<List<SubscriptionItemDto>, DataError>
+
+    /** All playlists of the account that granted the [accessToken], following every page. */
+    suspend fun getMyPlaylists(accessToken: String): AppResult<List<PlaylistDto>, DataError>
+
+    /** Ids of all videos of the playlist in its order, following every page. */
+    suspend fun getPlaylistVideoIds(
+        accessToken: String,
+        playlistId: String,
+    ): AppResult<List<String>, DataError>
 
     /** One page of videos found on YouTube; [pageToken] is `null` for the first page. */
     suspend fun searchVideos(request: VideoSearchRequest): AppResult<SearchListResponseDto, DataError>

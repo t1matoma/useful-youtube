@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.satoshi.usefulyoutube.core.database.UsefulYouTubeDatabase
 import dev.satoshi.usefulyoutube.core.database.dao.ChannelDao
+import dev.satoshi.usefulyoutube.core.database.dao.MirroredPlaylistDao
 import dev.satoshi.usefulyoutube.core.database.dao.PlaylistDao
 import dev.satoshi.usefulyoutube.core.database.dao.PlaylistItemDao
 import dev.satoshi.usefulyoutube.core.database.dao.RecentSearchQueryDao
@@ -46,4 +47,8 @@ internal object DatabaseModule {
 
     @Provides
     fun providePlaylistItemDao(database: UsefulYouTubeDatabase): PlaylistItemDao = database.playlistItemDao()
+
+    @Provides
+    fun provideMirroredPlaylistDao(database: UsefulYouTubeDatabase): MirroredPlaylistDao =
+        database.mirroredPlaylistDao()
 }

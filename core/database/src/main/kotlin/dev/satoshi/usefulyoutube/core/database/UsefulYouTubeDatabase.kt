@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import dev.satoshi.usefulyoutube.core.database.dao.ChannelDao
+import dev.satoshi.usefulyoutube.core.database.dao.MirroredPlaylistDao
 import dev.satoshi.usefulyoutube.core.database.dao.PlaylistDao
 import dev.satoshi.usefulyoutube.core.database.dao.PlaylistItemDao
 import dev.satoshi.usefulyoutube.core.database.dao.RecentSearchQueryDao
@@ -50,6 +51,8 @@ abstract class UsefulYouTubeDatabase : RoomDatabase() {
     abstract fun playlistDao(): PlaylistDao
 
     abstract fun playlistItemDao(): PlaylistItemDao
+
+    abstract fun mirroredPlaylistDao(): MirroredPlaylistDao
 
     companion object {
         const val NAME = "useful_youtube.db"

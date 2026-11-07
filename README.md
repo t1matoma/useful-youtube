@@ -8,7 +8,8 @@ You can also search all of YouTube explicitly. There is no backend: everything r
 
 - Import all subscriptions from your YouTube account (Google sign-in), or from Google Takeout (`subscriptions.csv`).
 - Feed of all subscription videos sorted by date, with pull-to-refresh and refresh on open.
-- Playlists on the device: create, rename, save any video from the player.
+- Playlists on the device: create, rename, save any video from the player; your YouTube playlists,
+  read-only and without Shorts.
 - Video search across YouTube, without Shorts: by relevance or by date, recent queries, adding the channel
   of a found video to your subscriptions.
 - Shorts filtering: by duration (≤ 180 s), confirmed by checking `youtube.com/shorts/{id}`.
@@ -49,6 +50,7 @@ Quota usage:
 - a refresh costs 1 unit per 50 new videos (`videos.list`);
 - adding a channel by `@handle` costs 1 unit (`channels.list`);
 - importing from the account costs 1 unit per 50 subscriptions (`subscriptions.list`);
+- loading your YouTube playlists costs about 1 unit per 50 playlists plus 2 units per 50 videos;
 - a search costs 101 units per page of 50 results (`search.list` + `videos.list`), so the daily limit
   allows about 95 searches;
 - RSS feeds cost nothing.
@@ -57,7 +59,7 @@ Apart from searches, the default daily limit of 10,000 units is far more than pe
 
 ### 2. Google sign-in (for importing from the account)
 
-Needed only for **Import from YouTube account**; the app works without it.
+Needed only for **Import from YouTube account** and YouTube playlists; the app works without it.
 
 1. In the same Cloud project open **Google Auth Platform** (APIs & Services → OAuth consent screen),
    choose the **External** audience and keep the app in **Testing**. Add your Google account to

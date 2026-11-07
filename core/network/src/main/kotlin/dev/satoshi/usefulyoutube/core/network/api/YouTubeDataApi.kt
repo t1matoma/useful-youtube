@@ -1,6 +1,8 @@
 package dev.satoshi.usefulyoutube.core.network.api
 
 import dev.satoshi.usefulyoutube.core.network.model.ChannelListResponseDto
+import dev.satoshi.usefulyoutube.core.network.model.PlaylistItemListResponseDto
+import dev.satoshi.usefulyoutube.core.network.model.PlaylistListResponseDto
 import dev.satoshi.usefulyoutube.core.network.model.SearchListResponseDto
 import dev.satoshi.usefulyoutube.core.network.model.SubscriptionListResponseDto
 import dev.satoshi.usefulyoutube.core.network.model.VideoListResponseDto
@@ -34,6 +36,24 @@ interface YouTubeDataApi {
         @Query("part") part: String = "snippet",
         @Query("maxResults") maxResults: Int = MAXIMUM_RESULTS_PER_PAGE,
     ): SubscriptionListResponseDto
+
+    @GET("playlists")
+    suspend fun getMyPlaylists(
+        @Header("Authorization") authorization: String,
+        @Query("pageToken") pageToken: String?,
+        @Query("mine") mine: Boolean = true,
+        @Query("part") part: String = "snippet",
+        @Query("maxResults") maxResults: Int = MAXIMUM_RESULTS_PER_PAGE,
+    ): PlaylistListResponseDto
+
+    @GET("playlistItems")
+    suspend fun getPlaylistItems(
+        @Header("Authorization") authorization: String,
+        @Query("playlistId") playlistId: String,
+        @Query("pageToken") pageToken: String?,
+        @Query("part") part: String = "contentDetails",
+        @Query("maxResults") maxResults: Int = MAXIMUM_RESULTS_PER_PAGE,
+    ): PlaylistItemListResponseDto
 
     /** Costs 100 quota units per page, regardless of `maxResults`. */
     @GET("search")

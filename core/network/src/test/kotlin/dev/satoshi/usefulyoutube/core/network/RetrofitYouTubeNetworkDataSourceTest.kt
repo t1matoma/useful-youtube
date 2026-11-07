@@ -225,6 +225,42 @@ class RetrofitYouTubeNetworkDataSourceTest {
         }
 
     @Test
+    fun `account playlists are requested with bearer token`() =
+        runTest {
+            enqueue(code = 200, body = Fixtures.read("playlists_response.json"))
+
+            val result = dataSource.getMyPlaylists(accessToken = "access-token")
+
+            val request = server.takeRequest()
+            assertThat(request.url.encodedPath).isEqualTo("/youtube/v3/playlists")
+            assertThat(request.headers["Authorization"]).isEqualTo("Bearer access-token")
+            assertThat(request.url.queryParameter("mine")).isEqualTo("true")
+            assertThat(request.url.queryParameter("part")).isEqualTo("snippet")
+            val playlists = (result as AppResult.Success).value
+            assertThat(playlists.map { it.id })
+                .containsExactly("PLaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "PLbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+            assertThat(playlists.map { it.snippet.title }).containsExactly("Kotlin talks", "Music")
+        }
+
+    @Test
+    fun `playlist video ids follow every page`() =
+        runTest {
+            enqueue(code = 200, body = Fixtures.read("playlist_items_page_1.json"))
+            enqueue(code = 200, body = Fixtures.read("playlist_items_page_2.json"))
+
+            val result = dataSource.getPlaylistVideoIds(accessToken = "access-token", playlistId = "PLaaaa")
+
+            val first = server.takeRequest()
+            assertThat(first.url.encodedPath).isEqualTo("/youtube/v3/playlistItems")
+            assertThat(first.url.queryParameter("playlistId")).isEqualTo("PLaaaa")
+            assertThat(first.url.queryParameter("part")).isEqualTo("contentDetails")
+            assertThat(first.headers["Authorization"]).isEqualTo("Bearer access-token")
+            assertThat(server.takeRequest().url.queryParameter("pageToken")).isEqualTo("EAAaBlBUOkNBVQ")
+            assertThat((result as AppResult.Success).value)
+                .containsExactly("aaaaaaaaaaa", "bbbbbbbbbbb", "ccccccccccc")
+        }
+
+    @Test
     fun `rejected access token is unauthorized`() =
         runTest {
             enqueue(code = 401, body = Fixtures.read("error_auth.json"))
