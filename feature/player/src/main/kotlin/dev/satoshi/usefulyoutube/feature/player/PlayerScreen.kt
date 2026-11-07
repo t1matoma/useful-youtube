@@ -2,6 +2,7 @@ package dev.satoshi.usefulyoutube.feature.player
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -31,6 +32,10 @@ import dev.satoshi.usefulyoutube.core.ui.component.LoadingContent
 import dev.satoshi.usefulyoutube.core.ui.component.MessageContent
 import dev.satoshi.usefulyoutube.core.ui.error.message
 import dev.satoshi.usefulyoutube.feature.player.component.YouTubePlayer
+import dev.satoshi.usefulyoutube.feature.player.save.SaveToPlaylistSheet
+import dev.satoshi.usefulyoutube.feature.player.save.SaveToPlaylistUiEvent
+import dev.satoshi.usefulyoutube.feature.player.save.SaveToPlaylistUiState
+import dev.satoshi.usefulyoutube.feature.player.save.SaveToPlaylistViewModel
 
 private const val COLLAPSED_DESCRIPTION_LINES = 3
 private val ContentPadding = 16.dp
@@ -40,9 +45,17 @@ private val ItemSpacing = 8.dp
 fun PlayerRoute(
     onNavigateBack: () -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
+    saveViewModel: SaveToPlaylistViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    PlayerScreen(state = state, onEvent = viewModel::onEvent, onNavigateBack = onNavigateBack)
+    val saveState by saveViewModel.uiState.collectAsStateWithLifecycle()
+    PlayerScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        saveState = saveState,
+        onSaveEvent = saveViewModel::onEvent,
+        onNavigateBack = onNavigateBack,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +63,8 @@ fun PlayerRoute(
 fun PlayerScreen(
     state: PlayerUiState,
     onEvent: (PlayerUiEvent) -> Unit,
+    saveState: SaveToPlaylistUiState,
+    onSaveEvent: (SaveToPlaylistUiEvent) -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -80,16 +95,18 @@ fun PlayerScreen(
             }
 
             is PlayerUiState.Content -> {
-                VideoContent(state, onEvent, contentModifier)
+                VideoContent(state, onEvent, onSaveEvent, contentModifier)
             }
         }
     }
+    SaveToPlaylistSheet(saveState, onSaveEvent)
 }
 
 @Composable
 private fun VideoContent(
     state: PlayerUiState.Content,
     onEvent: (PlayerUiEvent) -> Unit,
+    onSaveEvent: (SaveToPlaylistUiEvent) -> Unit,
     modifier: Modifier,
 ) {
     Column(modifier = modifier) {
@@ -98,7 +115,7 @@ private fun VideoContent(
             modifier = Modifier.verticalScroll(rememberScrollState()).padding(ContentPadding),
             verticalArrangement = Arrangement.spacedBy(ItemSpacing),
         ) {
-            VideoDetails(state, onEvent)
+            VideoDetails(state, onEvent, onSaveEvent)
         }
     }
 }
@@ -107,6 +124,7 @@ private fun VideoContent(
 private fun VideoDetails(
     state: PlayerUiState.Content,
     onEvent: (PlayerUiEvent) -> Unit,
+    onSaveEvent: (SaveToPlaylistUiEvent) -> Unit,
 ) {
     val video = state.video
     val isDescriptionExpanded = state.isDescriptionExpanded
@@ -116,8 +134,16 @@ private fun VideoDetails(
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    if (!state.isChannelSubscribed) {
-        SubscribeButton(state, onEvent)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(ItemSpacing)) {
+        OutlinedButton(onClick = { onSaveEvent(SaveToPlaylistUiEvent.SaveClicked) }) {
+            Text(stringResource(R.string.feature_player_save))
+        }
+        if (!state.isChannelSubscribed) {
+            SubscribeButton(state, onEvent)
+        }
+    }
+    state.subscribeError?.let { error ->
+        Text(error.message(), color = MaterialTheme.colorScheme.error)
     }
     if (video.description.isNotBlank()) {
         SelectionContainer {
@@ -145,8 +171,5 @@ private fun SubscribeButton(
 ) {
     OutlinedButton(onClick = { onEvent(PlayerUiEvent.SubscribeToChannel) }, enabled = !state.isSubscribing) {
         Text(stringResource(R.string.feature_player_subscribe))
-    }
-    state.subscribeError?.let { error ->
-        Text(error.message(), color = MaterialTheme.colorScheme.error)
     }
 }

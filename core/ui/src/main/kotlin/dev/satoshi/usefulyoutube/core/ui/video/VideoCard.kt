@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -39,20 +40,12 @@ fun VideoCard(
     video: Video,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /** An optional action next to the title, for example removing the video from a playlist. */
+    action: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxWidth().clickable(onClick = onClick).padding(CardPadding)) {
         Box {
-            AsyncImage(
-                model = video.thumbnailUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(THUMBNAIL_ASPECT_RATIO)
-                        .clip(RoundedCornerShape(ThumbnailCornerRadius))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-            )
+            VideoThumbnail(url = video.thumbnailUrl, modifier = Modifier.fillMaxWidth())
             durationLabel(video)?.let { label ->
                 Text(
                     text = label,
@@ -69,19 +62,41 @@ fun VideoCard(
                 )
             }
         }
-        Text(
-            text = video.title,
-            style = MaterialTheme.typography.titleMedium,
-            maxLines = TITLE_MAX_LINES,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = CardPadding),
-        )
-        Text(
-            text = stringResource(R.string.core_ui_video_subtitle, video.channelTitle, relativeDate(video)),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(modifier = Modifier.padding(top = CardPadding), verticalAlignment = Alignment.Top) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = video.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = TITLE_MAX_LINES,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = stringResource(R.string.core_ui_video_subtitle, video.channelTitle, relativeDate(video)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            action?.invoke()
+        }
     }
+}
+
+/** A 16:9 video thumbnail with rounded corners; [url] is `null` when there is nothing to show. */
+@Composable
+fun VideoThumbnail(
+    url: String?,
+    modifier: Modifier = Modifier,
+) {
+    AsyncImage(
+        model = url,
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+        modifier =
+            modifier
+                .aspectRatio(THUMBNAIL_ASPECT_RATIO)
+                .clip(RoundedCornerShape(ThumbnailCornerRadius))
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+    )
 }
 
 @Composable

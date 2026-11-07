@@ -26,8 +26,8 @@ without Shorts and without recommendations, and plays them in the official embed
 
 ### Navigation
 
-A bottom navigation bar switches between **Feed** and **Search**; each tab keeps its state. The video,
-channels and import screens open on top of the tabs without the bar.
+A bottom navigation bar switches between **Feed**, **Search** and **Playlists**; each tab keeps its state. The video,
+playlist, channels and import screens open on top of the tabs without the bar.
 
 ### Subscriptions
 
@@ -86,6 +86,15 @@ Implemented as the `ShortsDetector` strategy:
   searched again or deleted. A query is remembered even if its search fails.
 - No autocomplete: YouTube has no official API for suggestions.
 
+### Playlists
+
+- App playlists are stored only on the device and cost no quota: create, rename, delete (after
+  confirmation), remove videos. A playlist contains each video once, in the order the videos were added.
+- Any video can be saved: from the feed, the search or another playlist. The playlist keeps a copy of the
+  video's data, so it plays even if the video is not in the feed or the last search anymore.
+- The **Playlists** tab lists the playlists by title with their video count and the first video's
+  thumbnail. A playlist screen lists its videos; tapping one opens the video.
+
 ### Feed screen
 
 - All regular videos and live streams/premieres of all subscriptions, newest first.
@@ -99,7 +108,8 @@ Implemented as the `ShortsDetector` strategy:
   with `rel=0`, so related videos at the end come from the same channel only.
 - Title, channel, and a selectable description that can be expanded and collapsed.
 - Playback survives screen rotation.
-
+- **Save to playlist** opens a sheet with the app playlists, ticked when they contain the video, and
+  **New playlist**, which creates a playlist with the video.
 - For a video of a channel that is not subscribed (opened from the search), an **Add channel to
   subscriptions** button. The channel id is verified through its RSS feed, so it costs no quota.
 

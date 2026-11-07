@@ -6,6 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstChannelRepository
+import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstPlaylistRepository
 import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstSearchRepository
 import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstVideoRepository
 import dev.satoshi.usefulyoutube.core.data.shorts.NetworkShortsUrlProbe
@@ -13,6 +14,7 @@ import dev.satoshi.usefulyoutube.core.data.subscriptions.ContentResolverSubscrip
 import dev.satoshi.usefulyoutube.core.data.subscriptions.NetworkAccountSubscriptionsReader
 import dev.satoshi.usefulyoutube.core.domain.repository.AccountSubscriptionsReader
 import dev.satoshi.usefulyoutube.core.domain.repository.ChannelRepository
+import dev.satoshi.usefulyoutube.core.domain.repository.PlaylistRepository
 import dev.satoshi.usefulyoutube.core.domain.repository.SearchRepository
 import dev.satoshi.usefulyoutube.core.domain.repository.SubscriptionsFileReader
 import dev.satoshi.usefulyoutube.core.domain.repository.VideoRepository
@@ -38,6 +40,10 @@ internal abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindSearchRepository(repository: OfflineFirstSearchRepository): SearchRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPlaylistRepository(repository: OfflineFirstPlaylistRepository): PlaylistRepository
 
     @Binds
     abstract fun bindSubscriptionsFileReader(reader: ContentResolverSubscriptionsFileReader): SubscriptionsFileReader

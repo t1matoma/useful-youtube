@@ -18,6 +18,7 @@ import dev.satoshi.usefulyoutube.core.testing.MainDispatcherRule
 import dev.satoshi.usefulyoutube.core.testing.collectInBackground
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeChannelRepository
+import dev.satoshi.usefulyoutube.core.testing.repository.FakePlaylistRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeSearchRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeVideoRepository
 import dev.satoshi.usefulyoutube.feature.player.navigation.PlayerDestination
@@ -36,13 +37,19 @@ class PlayerViewModelTest {
     private val otherChannel = Channel(ChannelId("UCcccccccccccccccccccccc"), "Other channel")
     private val foundVideo = TestData.video(id = "found", channel = otherChannel)
     private val channelRepository = FakeChannelRepository(listOf(TestData.firstChannel))
+    private val playlistRepository = FakePlaylistRepository()
     private val searchRepository =
         FakeSearchRepository(SearchSession("q", SearchOrder.RELEVANCE, null), listOf(foundVideo))
 
     private fun createViewModel(videoId: String) =
         PlayerViewModel(
             savedStateHandle = SavedStateHandle(mapOf(PlayerDestination.VIDEO_ID_ARGUMENT to videoId)),
-            observeVideo = ObserveVideoUseCase(FakeVideoRepository(listOf(video)), searchRepository),
+            observeVideo =
+                ObserveVideoUseCase(
+                    FakeVideoRepository(listOf(video)),
+                    searchRepository,
+                    playlistRepository,
+                ),
             observeChannels = ObserveChannelsUseCase(channelRepository),
             addChannel = AddChannelUseCase(ChannelInputParser(), channelRepository),
         )

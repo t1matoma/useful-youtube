@@ -145,8 +145,9 @@ Google API errors from the response body (`errors[].reason`, `details[].reason`)
 
 ## Database
 
-Room, schema version 2, exported to `core/database/schemas/`. Version 2 added the search tables with
-`@AutoMigration(from = 1, to = 2)`; `MigrationTest` checks it against the exported schemas.
+Room, schema version 3, exported to `core/database/schemas/`. Version 2 added the search tables and
+version 3 the playlist tables, both with `@AutoMigration`; `MigrationTest` checks them against the
+exported schemas.
 
 | Table | Columns |
 |---|---|
@@ -155,8 +156,13 @@ Room, schema version 2, exported to `core/database/schemas/`. Version 2 added th
 | `search_results` | `video_id` (PK), `position`, `channel_id`, `channel_title`, `title`, `description`, `published_at`, `duration_seconds`, `thumbnail_url`, `content_kind`; no FK, because results come from any channel |
 | `search_session` | one row: `query_text`, `sort_order`, `next_page_token` (`NULL` when there are no more pages) |
 | `recent_search_queries` | `query_text` (PK), `used_order` (larger is more recent; at most 10 rows) |
+| `playlists` | `id` (PK, autoincrement), `title`, `remote_id` (unique; YouTube playlist id, `NULL` for app playlists), `synced_at` |
+| `playlist_items` | `playlist_id` (FK → playlists, `ON DELETE CASCADE`), `video_id`, `position`, and the `VideoSnapshot` columns; PK (`playlist_id`, `video_id`) |
 
-Indices: `videos.channel_id`, `videos.published_at`, `search_results.position`. Details and kinds are written with partial `@Update`s
+Indices: `videos.channel_id`, `videos.published_at`, `search_results.position`, unique
+`playlists.remote_id`, `playlist_items.video_id`. `VideoSnapshot` is an `@Embedded` copy of a video for
+tables that keep videos independently of the subscriptions. DAO methods that change playlists only touch
+app playlists (`remote_id IS NULL`). Details and kinds are written with partial `@Update`s
 (`VideoDetailsUpdate`, `VideoContentKindUpdate`). Any schema change needs a version bump and a migration.
 
 ## Search
@@ -177,6 +183,16 @@ can retry.
 `ObserveVideoUseCase` combines the feed and the search results, so the player opens found videos too;
 a feed video wins when both have it. `SearchViewModel` shows the stored query and order until the user
 edits them, and keeps search and "show more" errors apart.
+
+## Playlists
+
+`PlaylistRepository` (domain) serves app playlists and, read-only, mirrored YouTube playlists
+(`PlaylistSource`). `ObserveVideoUseCase` also looks into `playlist_items`, so the player opens saved videos
+of any channel.
+
+The player's **Save to playlist** sheet has its own `SaveToPlaylistViewModel` in `:feature:player`
+(`save/`). `PlayerRoute` creates both ViewModels for the same back stack entry; this keeps the playback
+state apart from the sheet state.
 
 ## Channels and import
 
@@ -206,7 +222,7 @@ Navigation Compose with type-safe routes. Each feature module exports `XDestinat
 `NavGraphBuilder.xScreen(...)` and, when other screens open it, `NavController.navigateToX()`.
 
 `UsefulYouTubeNavHost` wraps the graph in a `Scaffold` with a bottom `NavigationBar` for the
-`TopLevelDestination`s (feed, search). The bar is shown only on these screens; the player, channels and
+`TopLevelDestination`s (feed, search, playlists). The bar is shown only on these screens; the player, channels and
 import open on top of them without it. Switching tabs saves and restores each tab's state
 (`popUpTo(start) { saveState = true }`, `restoreState = true`). The host consumes the bar's insets, so the
 screens' own scaffolds do not pad twice.
@@ -217,6 +233,8 @@ screens' own scaffolds do not pad twice.
 | Video | sealed: `Loading`, `NotFound`, `Content` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`); **Add channel** for videos of other channels |
 | Channels | data class | inline error under the input, removal with confirmation |
 | Search | data class | query field, order chips, recent queries, results with **Show more**; reads the stored search |
+| Playlists | data class | app playlists, **New playlist** dialog |
+| Playlist | sealed: `Loading`, `NotFound`, `Content(dialog)` | videos; rename, delete and remove videos only for app playlists |
 | Import | sealed: `Idle`, `Importing`, `ConsentRequired`, `Imported`, `Failed` | file picked with `OpenDocument`; account import, see below |
 
 ### Google account authorization

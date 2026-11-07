@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_playlists_title">Плейлисты</string>
+    <string name="feature_playlists_local">Мои плейлисты</string>
+    <string name="feature_playlists_empty">Плейлистов пока нет. Создайте плейлист или сохраните видео из плеера.</string>
+    <string name="feature_playlists_video_count">Видео: %1$d</string>
+    <string name="feature_playlists_create">Новый плейлист</string>
+    <string name="feature_playlists_create_confirm">Создать</string>
+    <string name="feature_playlists_cancel">Отмена</string>
+    <string name="feature_playlists_back">Назад</string>
+    <string name="feature_playlists_rename">Переименовать</string>
+    <string name="feature_playlists_rename_confirm">Сохранить</string>
+    <string name="feature_playlists_delete">Удалить плейлист</string>
+    <string name="feature_playlists_delete_question">Удалить плейлист «%1$s»? Видео останутся на YouTube.</string>
+    <string name="feature_playlists_delete_confirm">Удалить</string>
+    <string name="feature_playlists_remove_video">Убрать из плейлиста</string>
+    <string name="feature_playlists_no_videos">В плейлисте пока нет видео. Сохраняйте видео кнопкой «Сохранить в плейлист» в плеере.</string>
+    <string name="feature_playlists_not_found">Плейлист не найден</string>
+</resources>

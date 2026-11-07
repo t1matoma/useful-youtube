@@ -22,7 +22,7 @@ class MigrationTest {
     val helper = MigrationTestHelper(InstrumentationRegistry.getInstrumentation(), UsefulYouTubeDatabase::class.java)
 
     @Test
-    fun `migration from 1 to 2 keeps subscriptions and videos`() =
+    fun `migration from 1 to 3 keeps subscriptions and videos`() =
         runTest {
             helper.createDatabase(DATABASE_NAME, 1).use { database ->
                 database.execSQL("INSERT INTO channels (id, title) VALUES ('UCaaaaaaaaaaaaaaaaaaaaaa', 'First')")
@@ -35,7 +35,7 @@ class MigrationTest {
                 )
             }
 
-            helper.runMigrationsAndValidate(DATABASE_NAME, 2, true).close()
+            helper.runMigrationsAndValidate(DATABASE_NAME, 3, true).close()
 
             val database =
                 Room
@@ -57,6 +57,30 @@ class MigrationTest {
                     ?.title,
             ).isEqualTo("Title")
             assertThat(database.searchDao().observeSession().first()).isNull()
+        }
+
+    @Test
+    fun `migration from 2 to 3 keeps search results`() =
+        runTest {
+            helper.createDatabase(DATABASE_NAME, 2).use { database ->
+                database.execSQL(
+                    "INSERT INTO recent_search_queries (query_text, used_order) VALUES ('kotlin', 1)",
+                )
+            }
+
+            helper.runMigrationsAndValidate(DATABASE_NAME, 3, true).close()
+
+            val database =
+                Room
+                    .databaseBuilder(
+                        ApplicationProvider.getApplicationContext(),
+                        UsefulYouTubeDatabase::class.java,
+                        DATABASE_NAME,
+                    ).allowMainThreadQueries()
+                    .build()
+            helper.closeWhenFinished(database)
+            assertThat(database.recentSearchQueryDao().observeRecentQueries().first()).containsExactly("kotlin")
+            assertThat(database.playlistDao().observePlaylists().first()).isEmpty()
         }
 
     private companion object {

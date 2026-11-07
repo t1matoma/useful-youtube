@@ -5,4 +5,9 @@
     <string name="feature_player_show_more">Показать полностью</string>
     <string name="feature_player_show_less">Свернуть</string>
     <string name="feature_player_subscribe">Добавить канал в подписки</string>
+    <string name="feature_player_save">Сохранить в плейлист</string>
+    <string name="feature_player_save_title">Сохранить в…</string>
+    <string name="feature_player_new_playlist">Новый плейлист</string>
+    <string name="feature_player_new_playlist_confirm">Создать</string>
+    <string name="feature_player_cancel">Отмена</string>
 </resources>

@@ -146,9 +146,10 @@ Environment:
 | Theme, shared components, error texts | `:core:ui` |
 | Google account authorization (`AccountAuthorizer`, `AccountConsent`) | `:core:auth` |
 | Fakes, test data, `MainDispatcherRule`, `collectInBackground` | `:core:testing` |
-| Screens | `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import` (package `feature.subscriptionimport`), `:feature:search` |
+| Screens | `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import` (package `feature.subscriptionimport`), `:feature:search`, `:feature:playlists` |
 | Search pipeline | `SearchVideosUseCase`, `LoadMoreSearchResultsUseCase`, `OfflineFirstSearchRepository` |
-| Shared video card and duration formatting | `:core:ui` (`core.ui.video`) |
+| Shared video card, thumbnail and duration formatting | `:core:ui` (`core.ui.video`) |
+| Text input dialog | `:core:ui` (`TextInputDialog`) |
 | Navigation graph, `Application`, manifest | `:app` |
 
 ## 6. Known pitfalls
@@ -178,6 +179,8 @@ Environment:
 - detekt's `TooManyFunctions` (10 per class) also counts DAO methods; split a DAO by table instead of
   suppressing it (`SearchDao`, `RecentSearchQueryDao`).
 - `search.list` costs 100 quota units per page. Never load search pages automatically.
+- Create ViewModels inside the test or `by lazy`, not as a field initializer: `viewModelScope` captures
+  `Dispatchers.Main.immediate` when the ViewModel is created, before `MainDispatcherRule` replaces it.
 - Compute expected values in tests (for example epoch milliseconds) instead of writing them from memory.
 - The newest Android cmdline-tools may hang while redirecting `sdkmanager` to the new Android CLI.
   cmdline-tools 19.0 works; run `sdkmanager` with stdin closed (`</dev/null`).

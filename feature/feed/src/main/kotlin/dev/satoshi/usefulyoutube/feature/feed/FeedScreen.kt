@@ -7,7 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -79,7 +79,7 @@ fun FeedScreen(
                 actions = {
                     IconButton(onClick = onOpenChannels) {
                         Icon(
-                            Icons.AutoMirrored.Filled.List,
+                            Icons.Default.Person,
                             contentDescription = stringResource(R.string.feature_feed_channels),
                         )
                     }
