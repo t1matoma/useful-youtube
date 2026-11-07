@@ -122,7 +122,8 @@ Environment:
 
 **Add user-facing text**
 
-- Add it to the module's `res/values/strings.xml` with the module prefix (`feature_feed_…`, `core_ui_…`).
+- Add it to the module's `res/values/strings.xml` (English) with the module prefix (`feature_feed_…`, `core_ui_…`)
+  and its translation to `res/values-ru/strings.xml`.
   Never hardcode text in composables.
 
 **Add a use case**
@@ -187,5 +188,12 @@ Environment:
   differ from the subscription. Videos take the id of the channel whose feed was requested; a mismatch
   used to fail the `videos.channel_id` foreign key and crash the app on refresh.
 - Compute expected values in tests (for example epoch milliseconds) instead of writing them from memory.
+- Space Grotesk and many other Google Fonts have no Cyrillic. Check the subsets before adding a font: the UI
+  has a Russian translation and video titles are often Cyrillic, and missing glyphs silently fall back to the system font.
+- The app colors live twice: `core/ui/.../theme/Color.kt` and `app/src/main/res/values/colors.xml` (window
+  background, splash, launcher icon). Change both.
+- The fullscreen view comes from the IFrame player (`FullscreenListener`); it is not part of the `UiState`.
+  `PlayerScreen` keeps it as plain Compose state, and `FullscreenPlayer` restores the orientation and the
+  system bars when it leaves the composition.
 - The newest Android cmdline-tools may hang while redirecting `sdkmanager` to the new Android CLI.
   cmdline-tools 19.0 works; run `sdkmanager` with stdin closed (`</dev/null`).

@@ -3,12 +3,15 @@ package dev.satoshi.usefulyoutube.core.ui.video
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -17,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,13 +33,20 @@ import dev.satoshi.usefulyoutube.core.ui.R
 import kotlin.time.Clock
 
 private const val THUMBNAIL_ASPECT_RATIO = 16f / 9f
-private const val BADGE_BACKGROUND_ALPHA = 0.8f
+private const val BADGE_BACKGROUND_ALPHA = 0.85f
 private const val TITLE_MAX_LINES = 2
-private val CardPadding = 12.dp
-private val BadgePadding = 6.dp
-private val BadgeInnerPadding = 4.dp
-private val ThumbnailCornerRadius = 12.dp
+private val CardBottomPadding = 20.dp
+private val TextPadding = 16.dp
+private val TextTopPadding = 12.dp
+private val TextSpacing = 4.dp
+private val BadgeMargin = 12.dp
+private val BadgeHorizontalPadding = 8.dp
+private val BadgeVerticalPadding = 3.dp
+private val LiveDotSize = 6.dp
+private val LiveDotSpacing = 6.dp
+private val ThumbnailCornerRadius = 10.dp
 
+/** A video with an edge-to-edge thumbnail, the title and "channel · date" below it. */
 @Composable
 fun VideoCard(
     video: Video,
@@ -43,27 +55,25 @@ fun VideoCard(
     /** An optional action next to the title, for example removing the video from a playlist. */
     action: (@Composable () -> Unit)? = null,
 ) {
-    Column(modifier = modifier.fillMaxWidth().clickable(onClick = onClick).padding(CardPadding)) {
+    Column(modifier = modifier.fillMaxWidth().clickable(onClick = onClick).padding(bottom = CardBottomPadding)) {
         Box {
-            VideoThumbnail(url = video.thumbnailUrl, modifier = Modifier.fillMaxWidth())
-            durationLabel(video)?.let { label ->
-                Text(
-                    text = label,
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(BadgePadding)
-                            .background(
-                                Color.Black.copy(alpha = BADGE_BACKGROUND_ALPHA),
-                                RoundedCornerShape(BadgeInnerPadding),
-                            ).padding(horizontal = BadgeInnerPadding),
-                )
+            VideoThumbnail(url = video.thumbnailUrl, shape = RectangleShape, modifier = Modifier.fillMaxWidth())
+            if (video.contentKind == VideoContentKind.LIVE_OR_PREMIERE) {
+                LiveBadge(modifier = Modifier.align(Alignment.TopStart).padding(BadgeMargin))
+            } else {
+                video.duration?.let { duration ->
+                    DurationBadge(
+                        text = formatDuration(duration),
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(BadgeMargin),
+                    )
+                }
             }
         }
-        Row(modifier = Modifier.padding(top = CardPadding), verticalAlignment = Alignment.Top) {
-            Column(modifier = Modifier.weight(1f)) {
+        Row(
+            modifier = Modifier.padding(start = TextPadding, top = TextTopPadding, end = TextPadding),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(TextSpacing)) {
                 Text(
                     text = video.title,
                     style = MaterialTheme.typography.titleMedium,
@@ -81,11 +91,12 @@ fun VideoCard(
     }
 }
 
-/** A 16:9 video thumbnail with rounded corners; [url] is `null` when there is nothing to show. */
+/** A 16:9 video thumbnail; [url] is `null` when there is nothing to show. */
 @Composable
 fun VideoThumbnail(
     url: String?,
     modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(ThumbnailCornerRadius),
 ) {
     AsyncImage(
         model = url,
@@ -94,22 +105,52 @@ fun VideoThumbnail(
         modifier =
             modifier
                 .aspectRatio(THUMBNAIL_ASPECT_RATIO)
-                .clip(RoundedCornerShape(ThumbnailCornerRadius))
+                .clip(shape)
                 .background(MaterialTheme.colorScheme.surfaceVariant),
     )
 }
 
-@Composable
-private fun durationLabel(video: Video): String? =
-    when {
-        video.contentKind == VideoContentKind.LIVE_OR_PREMIERE -> stringResource(R.string.core_ui_video_live)
-        else -> video.duration?.let(::formatDuration)
-    }
-
-private fun relativeDate(video: Video): String =
+/** "2 hours ago" and the like, relative to now. */
+fun relativeDate(video: Video): String =
     DateUtils
         .getRelativeTimeSpanString(
             video.publishedAt.toEpochMilliseconds(),
             Clock.System.now().toEpochMilliseconds(),
             DateUtils.MINUTE_IN_MILLIS,
         ).toString()
+
+@Composable
+private fun DurationBadge(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        color = Color.White,
+        style = MaterialTheme.typography.labelMedium,
+        modifier =
+            modifier
+                .background(Color.Black.copy(alpha = BADGE_BACKGROUND_ALPHA), MaterialTheme.shapes.extraSmall)
+                .padding(horizontal = BadgeHorizontalPadding, vertical = BadgeVerticalPadding),
+    )
+}
+
+@Composable
+private fun LiveBadge(modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        modifier =
+            modifier
+                .background(colors.primary, CircleShape)
+                .padding(horizontal = BadgeHorizontalPadding + BadgeVerticalPadding, vertical = BadgeVerticalPadding),
+        horizontalArrangement = Arrangement.spacedBy(LiveDotSpacing),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(modifier = Modifier.size(LiveDotSize).background(colors.onPrimary, CircleShape))
+        Text(
+            text = stringResource(R.string.core_ui_video_live),
+            color = colors.onPrimary,
+            style = MaterialTheme.typography.labelMedium,
+        )
+    }
+}

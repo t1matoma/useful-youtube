@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="core_ui_error_no_network">Нет подключения к интернету</string>
-    <string name="core_ui_error_invalid_api_key">Неверный ключ YouTube Data API. Проверьте youtube.api.key в local.properties</string>
-    <string name="core_ui_error_unauthorized">Доступ к аккаунту Google истёк или отозван. Войдите снова</string>
-    <string name="core_ui_error_quota_exceeded">Исчерпана дневная квота YouTube Data API</string>
-    <string name="core_ui_error_not_found">Не найдено</string>
-    <string name="core_ui_error_http">Ошибка сервера (HTTP %1$d)</string>
-    <string name="core_ui_error_parsing">Не удалось разобрать ответ YouTube</string>
-    <string name="core_ui_error_unknown">Неизвестная ошибка</string>
-    <string name="core_ui_error_unreadable_file">Не удалось прочитать файл</string>
-    <string name="core_ui_error_invalid_format">Файл не похож на subscriptions.csv из Google Takeout</string>
-    <string name="core_ui_error_no_channels">Подписки не найдены</string>
-    <string name="core_ui_error_auth_consent_required">Разрешите приложению доступ к аккаунту YouTube</string>
-    <string name="core_ui_error_auth_cancelled">Вход в аккаунт Google отменён</string>
-    <string name="core_ui_error_auth_unavailable">Для входа нужны актуальные сервисы Google Play</string>
-    <string name="core_ui_error_auth_failed">Не удалось войти в аккаунт Google</string>
-    <string name="core_ui_error_invalid_channel_input">Введите ссылку на канал, @handle или id канала (UC…)</string>
-    <string name="core_ui_error_already_subscribed">Этот канал уже есть в подписках</string>
-    <string name="core_ui_error_channel_not_found">Канал не найден</string>
-    <string name="core_ui_retry">Повторить</string>
-    <string name="core_ui_video_live">Трансляция</string>
+    <string name="core_ui_error_no_network">No internet connection</string>
+    <string name="core_ui_error_invalid_api_key">Invalid YouTube Data API key. Check youtube.api.key in local.properties</string>
+    <string name="core_ui_error_unauthorized">Access to the Google account expired or was revoked. Sign in again</string>
+    <string name="core_ui_error_quota_exceeded">The daily YouTube Data API quota is used up</string>
+    <string name="core_ui_error_not_found">Not found</string>
+    <string name="core_ui_error_http">Server error (HTTP %1$d)</string>
+    <string name="core_ui_error_parsing">Could not read the YouTube response</string>
+    <string name="core_ui_error_unknown">Unknown error</string>
+    <string name="core_ui_error_unreadable_file">Could not read the file</string>
+    <string name="core_ui_error_invalid_format">The file does not look like subscriptions.csv from Google Takeout</string>
+    <string name="core_ui_error_no_channels">No subscriptions found</string>
+    <string name="core_ui_error_auth_consent_required">Allow the app to access your YouTube account</string>
+    <string name="core_ui_error_auth_cancelled">Google sign-in was cancelled</string>
+    <string name="core_ui_error_auth_unavailable">Signing in needs up-to-date Google Play services</string>
+    <string name="core_ui_error_auth_failed">Could not sign in to the Google account</string>
+    <string name="core_ui_error_invalid_channel_input">Enter a channel link, @handle or channel id (UC…)</string>
+    <string name="core_ui_error_already_subscribed">This channel is already in your subscriptions</string>
+    <string name="core_ui_error_channel_not_found">Channel not found</string>
+    <string name="core_ui_retry">Retry</string>
+    <string name="core_ui_video_live">Live</string>
     <string name="core_ui_video_subtitle">%1$s · %2$s</string>
 </resources>

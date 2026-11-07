@@ -1,27 +1,27 @@
 package dev.satoshi.usefulyoutube.core.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 
+private val UsefulYouTubeShapes =
+    Shapes(
+        extraSmall = RoundedCornerShape(6.dp),
+        small = RoundedCornerShape(10.dp),
+        medium = RoundedCornerShape(16.dp),
+        large = RoundedCornerShape(20.dp),
+        extraLarge = RoundedCornerShape(28.dp),
+    )
+
+/** The app is always dark and uses its own palette instead of the wallpaper colors. */
 @Composable
-fun UsefulYouTubeTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit,
-) {
-    val supportsDynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val colorScheme =
-        when {
-            supportsDynamicColor && darkTheme -> dynamicDarkColorScheme(LocalContext.current)
-            supportsDynamicColor -> dynamicLightColorScheme(LocalContext.current)
-            darkTheme -> darkColorScheme()
-            else -> lightColorScheme()
-        }
-    MaterialTheme(colorScheme = colorScheme, content = content)
+fun UsefulYouTubeTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = UsefulYouTubeColorScheme,
+        typography = UsefulYouTubeTypography,
+        shapes = UsefulYouTubeShapes,
+        content = content,
+    )
 }

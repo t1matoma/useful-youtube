@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Keep in sync with core/ui/.../theme/Color.kt. -->
+    <color name="app_background">#FF0E0E10</color>
+    <color name="app_accent">#FFFF5A4E</color>
+    <color name="app_on_background_muted">#FFC9C9CF</color>
+</resources>

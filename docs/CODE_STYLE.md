@@ -55,7 +55,8 @@ Rules:
 - `XRoute` is the only place with `hiltViewModel()` and `collectAsStateWithLifecycle()`.
 - Navigation is done with callbacks (`onVideoClick: (VideoId) -> Unit`), not ViewModel events.
 - Navigation files are named `XDestination.kt` (required by detekt's `MatchingDeclarationName`).
-- Strings live in `res/values/strings.xml` with a module prefix: `feature_feed_…`, `core_ui_…`.
+- Strings live in `res/values/strings.xml` (English, the default) with a module prefix: `feature_feed_…`,
+  `core_ui_…`. Every string also has a Russian translation in `res/values-ru/strings.xml`.
 
 ## Errors
 

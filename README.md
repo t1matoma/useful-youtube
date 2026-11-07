@@ -23,7 +23,7 @@ You can also search all of YouTube explicitly. There is no backend: everything r
 Only official data sources are used: channel RSS feeds, YouTube Data API v3 (with an API key, and with
 your OAuth authorization for your own subscriptions) and the IFrame player.
 
-> The UI is currently in Russian.
+> The UI is in English, with a Russian translation that is used when the device language is Russian.
 
 ## Requirements
 

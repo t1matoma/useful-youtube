@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_player_back">Назад</string>
+    <string name="feature_player_not_found">Видео не найдено</string>
+    <string name="feature_player_show_more">Показать полностью</string>
+    <string name="feature_player_show_less">Свернуть</string>
+    <string name="feature_player_subscribe">В подписки</string>
+    <string name="feature_player_save">Сохранить в плейлист</string>
+    <string name="feature_player_save_title">Сохранить в…</string>
+    <string name="feature_player_new_playlist">Новый плейлист</string>
+    <string name="feature_player_new_playlist_confirm">Создать</string>
+    <string name="feature_player_cancel">Отмена</string>
+    <string name="feature_player_queue_position">%1$s · %2$d из %3$d</string>
+    <string name="feature_player_previous">Предыдущее видео</string>
+    <string name="feature_player_next">Следующее видео</string>
+    <string name="feature_player_queue_label">Плейлист</string>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_search_hint">Поиск на YouTube</string>
+    <string name="feature_search_clear">Очистить</string>
+    <string name="feature_search_order_relevance">По релевантности</string>
+    <string name="feature_search_order_date">По дате</string>
+    <string name="feature_search_prompt">Введите запрос, чтобы найти видео на YouTube. Shorts в результатах не показываются.</string>
+    <string name="feature_search_recent">Недавние запросы</string>
+    <string name="feature_search_delete_recent">Удалить запрос «%1$s»</string>
+    <string name="feature_search_nothing_found">Ничего не найдено</string>
+    <string name="feature_search_load_more">Показать ещё</string>
+</resources>

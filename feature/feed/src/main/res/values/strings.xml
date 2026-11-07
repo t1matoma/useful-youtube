@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="feature_feed_title">Подписки</string>
-    <string name="feature_feed_empty">Новых видео пока нет. Импортируйте подписки или добавьте каналы.</string>
-    <string name="feature_feed_import">Импортировать подписки</string>
-    <string name="feature_feed_channels">Каналы</string>
+    <string name="feature_feed_title">Subscriptions</string>
+    <string name="feature_feed_empty">No new videos yet. Import your subscriptions or add channels.</string>
+    <string name="feature_feed_import">Import subscriptions</string>
+    <string name="feature_feed_channels">Channels</string>
 </resources>

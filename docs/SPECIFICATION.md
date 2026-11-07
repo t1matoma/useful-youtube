@@ -24,6 +24,14 @@ without Shorts and without recommendations, and plays them in the official embed
 
 ## Features
 
+### Look
+
+- The app is always dark, with its own palette (near-black background, coral accent) instead of the
+  wallpaper colors, on every Android version. There is no light theme.
+- The UI is in English; a Russian translation is used when the device language is Russian.
+- Bundled fonts: Inter for text, Onest for headings (both support Cyrillic).
+- Own launcher icon (adaptive, with a themed monochrome layer) and a dark splash screen.
+
 ### Navigation
 
 A bottom navigation bar switches between **Feed**, **Search**, **Playlists** and **History**; each tab
@@ -122,7 +130,7 @@ Implemented as the `ShortsDetector` strategy:
 ### Feed screen
 
 - All regular videos and live streams/premieres of all subscriptions, newest first.
-- Each item: thumbnail, duration or a live badge, title, channel, relative publication date.
+- Each item: an edge-to-edge thumbnail, duration or a live badge, title, channel, relative publication date.
 - Pull-to-refresh; loading, empty (with a shortcut to import), and error (with retry) states.
 - A refresh error over stored videos is shown once in a snackbar.
 
@@ -130,9 +138,12 @@ Implemented as the `ShortsDetector` strategy:
 
 - Official IFrame player ([android-youtube-player](https://github.com/PierfrancescoSoffritti/android-youtube-player))
   with `rel=0`, so related videos at the end come from the same channel only.
-- Title, channel, and a selectable description that can be expanded and collapsed.
+- Title, channel, relative publication date, and a selectable description that can be expanded and collapsed.
 - Playback survives screen rotation.
-- A playlist plays in order: when a video ends, the next one starts. A bar under the player shows
+- **Fullscreen** through the player's own fullscreen button: the video covers the screen in landscape with
+  the system bars hidden. The same button or Back leaves fullscreen. In a playlist, **Previous** and
+  **Next** are shown on the sides while the video is paused.
+- A playlist plays in order: when a video ends, the next one starts. A bar under the actions shows
   "‹playlist› · 3 of 12" with **Previous** and **Next**. Back returns to the playlist.
 - **Save to playlist** opens a sheet with the app playlists, ticked when they contain the video, and
   **New playlist**, which creates a playlist with the video.

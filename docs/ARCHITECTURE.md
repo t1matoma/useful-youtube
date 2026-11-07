@@ -55,7 +55,7 @@ graph TD
 | `:core:data` | Android library | Repository implementations, mappers, CSV parser, worker, Hilt bindings |
 | `:core:database` | Android library | Room: entities, DAOs, exported schema (`schemas/`) |
 | `:core:network` | Android library | Retrofit (Data API), RSS parser (xmlutil), DTOs, network error mapping |
-| `:core:ui` | Android library | Theme, shared components (`LoadingContent`, `MessageContent`, `VideoCard`), duration formatting, error messages |
+| `:core:ui` | Android library | Theme (one dark color scheme, bundled Inter and Onest fonts in `res/font`, their licenses in `core/ui/licenses/`), shared components (`LoadingContent`, `MessageContent`, `VideoCard`), duration formatting, error messages |
 | `:core:auth` | Android library | Google account authorization (`AuthorizationClient`): implements `AccountAuthorizer`, exposes `AccountConsent` |
 | `:core:testing` | JVM | Fake repositories, `TestData`, `MainDispatcherRule`, `collectInBackground` |
 | `:feature:*` | Android library | Screens: `XViewModel`, `XUiState`, `XUiEvent`, `XScreen`, `XRoute`, navigation |
@@ -256,12 +256,17 @@ Navigation Compose with type-safe routes. Each feature module exports `XDestinat
 `TopLevelDestination`s (feed, search, playlists, history). The bar is shown only on these screens; the player, channels and
 import open on top of them without it. Switching tabs saves and restores each tab's state
 (`popUpTo(start) { saveState = true }`, `restoreState = true`). The host consumes the bar's insets, so the
-screens' own scaffolds do not pad twice.
+screens' own scaffolds do not pad twice. The selected tab is marked with the accent color and a dot instead of
+the Material indicator.
+
+`MainActivity` installs the splash screen (`core-splashscreen`, `Theme.UsefulYouTube.Starting`) and uses
+light system bar icons, because the app is always dark. The window theme (`app/src/main/res/values/themes.xml`)
+has the same background as the Compose theme, so there is no light flash at start.
 
 | Screen | State | Notes |
 |---|---|---|
 | Feed | sealed: `Loading`, `Empty`, `Error`, `Content` | refreshes on open, pull-to-refresh; an error over stored content is shown once in a snackbar |
-| Video | sealed: `Loading`, `NotFound`, `Content(queue)` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`); **Add channel** for videos of other channels; playlist queue with autoplay |
+| Video | sealed: `Loading`, `NotFound`, `Content(queue)` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`); fullscreen via the player's button (`FullscreenListener` → `FullscreenPlayer`, landscape and hidden system bars while it is shown); **Add channel** for videos of other channels; playlist queue with autoplay |
 | Channels | data class | inline error under the input, removal with confirmation |
 | Search | data class | query field, order chips, recent queries, results with **Show more**; reads the stored search |
 | History | data class | videos grouped by day (`groupByDay` with the injected `Clock` and `ZoneId`), remove, clear with confirmation |

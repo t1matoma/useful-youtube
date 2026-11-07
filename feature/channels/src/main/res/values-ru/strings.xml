@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_channels_title">Каналы</string>
+    <string name="feature_channels_back">Назад</string>
+    <string name="feature_channels_import">Импортировать подписки</string>
+    <string name="feature_channels_input_label">Ссылка, @handle или id канала</string>
+    <string name="feature_channels_add">Добавить</string>
+    <string name="feature_channels_empty">Подписок пока нет</string>
+    <string name="feature_channels_remove">Удалить канал %1$s</string>
+    <string name="feature_channels_remove_title">Удалить канал?</string>
+    <string name="feature_channels_remove_message">«%1$s» и его видео будут удалены из ленты.</string>
+    <string name="feature_channels_remove_confirm">Удалить</string>
+    <string name="feature_channels_remove_cancel">Отмена</string>
+</resources>

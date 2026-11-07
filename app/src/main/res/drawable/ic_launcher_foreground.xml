@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A feed (three lines) next to a play mark. 108dp canvas, content inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M33,41H53M33,54H53M33,67H45"
+        android:strokeWidth="6"
+        android:strokeColor="@color/app_on_background_muted"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="@color/app_accent"
+        android:pathData="M62,40L80,54L62,68Z"
+        android:strokeWidth="6"
+        android:strokeColor="@color/app_accent"
+        android:strokeLineJoin="round" />
+</vector>

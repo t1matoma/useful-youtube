@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="feature_channels_title">Каналы</string>
-    <string name="feature_channels_back">Назад</string>
-    <string name="feature_channels_import">Импортировать подписки</string>
-    <string name="feature_channels_input_label">Ссылка, @handle или id канала</string>
-    <string name="feature_channels_add">Добавить</string>
-    <string name="feature_channels_empty">Подписок пока нет</string>
-    <string name="feature_channels_remove">Удалить канал %1$s</string>
-    <string name="feature_channels_remove_title">Удалить канал?</string>
-    <string name="feature_channels_remove_message">«%1$s» и его видео будут удалены из ленты.</string>
-    <string name="feature_channels_remove_confirm">Удалить</string>
-    <string name="feature_channels_remove_cancel">Отмена</string>
+    <string name="feature_channels_title">Channels</string>
+    <string name="feature_channels_back">Back</string>
+    <string name="feature_channels_import">Import subscriptions</string>
+    <string name="feature_channels_input_label">Link, @handle or channel id</string>
+    <string name="feature_channels_add">Add</string>
+    <string name="feature_channels_empty">No subscriptions yet</string>
+    <string name="feature_channels_remove">Remove channel %1$s</string>
+    <string name="feature_channels_remove_title">Remove channel?</string>
+    <string name="feature_channels_remove_message">“%1$s” and its videos will be removed from the feed.</string>
+    <string name="feature_channels_remove_confirm">Remove</string>
+    <string name="feature_channels_remove_cancel">Cancel</string>
 </resources>
