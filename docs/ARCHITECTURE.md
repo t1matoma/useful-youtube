@@ -42,7 +42,7 @@ graph TD
 
 | Module | Type | Responsibility |
 |---|---|---|
-| `:app` | Android app | `Application` (Hilt, WorkManager), `MainActivity`, `UsefulYouTubeNavHost` |
+| `:app` | Android app | `Application` (Hilt, WorkManager), `MainActivity`, `UsefulYouTubeNavHost` with the bottom navigation |
 | `:core:model` | JVM | Domain models, `AppResult`, the `AppError` hierarchy |
 | `:core:domain` | JVM | Use cases, repository interfaces, `ShortsDetector`, channel input parsing |
 | `:core:data` | Android library | Repository implementations, mappers, CSV parser, worker, Hilt bindings |
@@ -204,6 +204,12 @@ edits them, and keeps search and "show more" errors apart.
 
 Navigation Compose with type-safe routes. Each feature module exports `XDestination` (`@Serializable`),
 `NavGraphBuilder.xScreen(...)` and, when other screens open it, `NavController.navigateToX()`.
+
+`UsefulYouTubeNavHost` wraps the graph in a `Scaffold` with a bottom `NavigationBar` for the
+`TopLevelDestination`s (feed, search). The bar is shown only on these screens; the player, channels and
+import open on top of them without it. Switching tabs saves and restores each tab's state
+(`popUpTo(start) { saveState = true }`, `restoreState = true`). The host consumes the bar's insets, so the
+screens' own scaffolds do not pad twice.
 
 | Screen | State | Notes |
 |---|---|---|

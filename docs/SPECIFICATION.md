@@ -24,6 +24,11 @@ without Shorts and without recommendations, and plays them in the official embed
 
 ## Features
 
+### Navigation
+
+A bottom navigation bar switches between **Feed** and **Search**; each tab keeps its state. The video,
+channels and import screens open on top of the tabs without the bar.
+
 ### Subscriptions
 
 - Import from the YouTube account: the user authorizes the app with Google (scope
@@ -68,7 +73,7 @@ Implemented as the `ShortsDetector` strategy:
 
 ### Search
 
-- Opened from the search icon of the feed. Searches all of YouTube with Data API
+- The **Search** tab. Searches all of YouTube with Data API
   `search.list?type=video&part=id&maxResults=50` (100 quota units per page), with `regionCode` and
   `relevanceLanguage` taken from the device locale.
 - Details of the found videos are loaded with `videos.list` (1 unit), and Shorts are removed with the same

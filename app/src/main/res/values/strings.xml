@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Useful YouTube</string>
+    <string name="app_tab_feed">Лента</string>
+    <string name="app_tab_search">Поиск</string>
 </resources>

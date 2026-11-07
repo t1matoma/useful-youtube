@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
@@ -60,7 +59,6 @@ private val ItemSpacing = 8.dp
 
 @Composable
 fun SearchRoute(
-    onNavigateBack: () -> Unit,
     onVideoClick: (VideoId) -> Unit,
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
@@ -68,7 +66,6 @@ fun SearchRoute(
     SearchScreen(
         state = state,
         onEvent = viewModel::onEvent,
-        onNavigateBack = onNavigateBack,
         onVideoClick = onVideoClick,
     )
 }
@@ -78,24 +75,13 @@ fun SearchRoute(
 fun SearchScreen(
     state: SearchUiState,
     onEvent: (SearchUiEvent) -> Unit,
-    onNavigateBack: () -> Unit,
     onVideoClick: (VideoId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { QueryField(state.query, onEvent) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.feature_search_back),
-                        )
-                    }
-                },
-            )
+            TopAppBar(title = { QueryField(state.query, onEvent) })
         },
     ) { innerPadding ->
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
@@ -290,6 +276,6 @@ private fun LoadMoreFooter(
 @Composable
 private fun SearchScreenPromptPreview() {
     UsefulYouTubeTheme {
-        SearchScreen(state = SearchUiState(), onEvent = {}, onNavigateBack = {}, onVideoClick = {})
+        SearchScreen(state = SearchUiState(), onEvent = {}, onVideoClick = {})
     }
 }

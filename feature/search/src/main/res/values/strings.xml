@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="feature_search_hint">Поиск на YouTube</string>
-    <string name="feature_search_back">Назад</string>
     <string name="feature_search_clear">Очистить</string>
     <string name="feature_search_order_relevance">По релевантности</string>
     <string name="feature_search_order_date">По дате</string>

@@ -42,7 +42,6 @@ class FeedScreenTest {
                 onVideoClick = { clickedVideos += it },
                 onOpenChannels = {},
                 onImportSubscriptions = { importClicks++ },
-                onOpenSearch = {},
             )
         }
     }

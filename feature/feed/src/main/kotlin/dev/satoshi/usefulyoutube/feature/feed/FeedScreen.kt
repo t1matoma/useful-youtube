@@ -8,7 +8,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,7 +40,6 @@ fun FeedRoute(
     onVideoClick: (VideoId) -> Unit,
     onOpenChannels: () -> Unit,
     onImportSubscriptions: () -> Unit,
-    onOpenSearch: () -> Unit,
     viewModel: FeedViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -51,7 +49,6 @@ fun FeedRoute(
         onVideoClick = onVideoClick,
         onOpenChannels = onOpenChannels,
         onImportSubscriptions = onImportSubscriptions,
-        onOpenSearch = onOpenSearch,
     )
 }
 
@@ -63,7 +60,6 @@ fun FeedScreen(
     onVideoClick: (VideoId) -> Unit,
     onOpenChannels: () -> Unit,
     onImportSubscriptions: () -> Unit,
-    onOpenSearch: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -81,9 +77,6 @@ fun FeedScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.feature_feed_title)) },
                 actions = {
-                    IconButton(onClick = onOpenSearch) {
-                        Icon(Icons.Default.Search, contentDescription = stringResource(R.string.feature_feed_search))
-                    }
                     IconButton(onClick = onOpenChannels) {
                         Icon(
                             Icons.AutoMirrored.Filled.List,
@@ -172,7 +165,6 @@ private fun FeedScreenErrorPreview() {
             onVideoClick = {},
             onOpenChannels = {},
             onImportSubscriptions = {},
-            onOpenSearch = {},
         )
     }
 }

@@ -41,7 +41,6 @@ class SearchScreenTest {
             SearchScreen(
                 state = state,
                 onEvent = { events += it },
-                onNavigateBack = {},
                 onVideoClick = { clickedVideos += it },
             )
         }

@@ -117,7 +117,7 @@ Environment:
 2. Include it in `settings.gradle.kts` and add it to `app/build.gradle.kts`.
 3. Follow the feature template in `docs/CODE_STYLE.md`: `XUiState`, `XUiEvent`, `XViewModel`, `XScreen`
    + `XRoute`, `navigation/XDestination.kt`.
-4. Register it in `UsefulYouTubeNavHost`.
+4. Register it in `UsefulYouTubeNavHost`; a tab of the bottom bar also needs a `TopLevelDestination` entry.
 5. Add ViewModel tests and, for key states, Compose UI tests.
 
 **Add user-facing text**
