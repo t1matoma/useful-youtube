@@ -106,7 +106,7 @@ class PlaylistScreensTest {
                 state = PlaylistUiState.Content(PlaylistWithVideos(playlist(PlaylistSource.LOCAL, 1), listOf(video))),
                 onEvent = { events += it },
                 onNavigateBack = {},
-                onVideoClick = {},
+                onPlay = { _, _ -> },
             )
         }
 
@@ -125,7 +125,7 @@ class PlaylistScreensTest {
                 state = PlaylistUiState.Content(PlaylistWithVideos(playlist(PlaylistSource.YOUTUBE, 1), listOf(video))),
                 onEvent = {},
                 onNavigateBack = {},
-                onVideoClick = { clicked += it },
+                onPlay = { videoId, _ -> clicked += videoId },
             )
         }
 

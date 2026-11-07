@@ -20,4 +20,5 @@
     <string name="feature_playlists_remove_video">Убрать из плейлиста</string>
     <string name="feature_playlists_no_videos">В плейлисте пока нет видео. Сохраняйте видео кнопкой «Сохранить в плейлист» в плеере.</string>
     <string name="feature_playlists_not_found">Плейлист не найден</string>
+    <string name="feature_playlists_play_all">Воспроизвести всё</string>
 </resources>

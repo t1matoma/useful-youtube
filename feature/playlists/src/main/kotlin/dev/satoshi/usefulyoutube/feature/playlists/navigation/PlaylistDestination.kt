@@ -22,9 +22,9 @@ fun NavController.navigateToPlaylist(id: PlaylistId) = navigate(PlaylistDestinat
 
 fun NavGraphBuilder.playlistScreen(
     onNavigateBack: () -> Unit,
-    onVideoClick: (VideoId) -> Unit,
+    onPlay: (VideoId, PlaylistId) -> Unit,
 ) {
     composable<PlaylistDestination> {
-        PlaylistRoute(onNavigateBack = onNavigateBack, onVideoClick = onVideoClick)
+        PlaylistRoute(onNavigateBack = onNavigateBack, onPlay = onPlay)
     }
 }

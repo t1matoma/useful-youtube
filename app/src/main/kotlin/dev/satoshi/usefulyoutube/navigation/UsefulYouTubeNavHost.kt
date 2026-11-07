@@ -69,7 +69,7 @@ fun UsefulYouTubeNavHost(modifier: Modifier = Modifier) {
             playlistsScreen(onPlaylistClick = navController::navigateToPlaylist)
             playlistScreen(
                 onNavigateBack = navController::popBackStack,
-                onVideoClick = navController::navigateToPlayer,
+                onPlay = navController::navigateToPlayer,
             )
             playerScreen(onNavigateBack = navController::popBackStack)
             channelsScreen(

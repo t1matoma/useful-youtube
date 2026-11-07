@@ -15,5 +15,17 @@ sealed interface PlayerUiState {
         val isChannelSubscribed: Boolean,
         val isSubscribing: Boolean = false,
         val subscribeError: ChannelError? = null,
+        /** Set when a playlist is played; `null` for a single video. */
+        val queue: PlaybackQueue? = null,
     ) : PlayerUiState
+}
+
+/** [position] is 1-based, as shown to the user ("3 of 12"). */
+data class PlaybackQueue(
+    val playlistTitle: String,
+    val position: Int,
+    val size: Int,
+) {
+    val hasPrevious: Boolean get() = position > 1
+    val hasNext: Boolean get() = position < size
 }

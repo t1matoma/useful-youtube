@@ -10,4 +10,7 @@
     <string name="feature_player_new_playlist">Новый плейлист</string>
     <string name="feature_player_new_playlist_confirm">Создать</string>
     <string name="feature_player_cancel">Отмена</string>
+    <string name="feature_player_queue_position">%1$s · %2$d из %3$d</string>
+    <string name="feature_player_previous">Предыдущее видео</string>
+    <string name="feature_player_next">Следующее видео</string>
 </resources>

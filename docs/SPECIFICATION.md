@@ -93,8 +93,8 @@ Implemented as the `ShortsDetector` strategy:
 - Any video can be saved: from the feed, the search or another playlist. The playlist keeps a copy of the
   video's data, so it plays even if the video is not in the feed or the last search anymore.
 - The **Playlists** tab lists the playlists by title with their video count and the first video's
-  thumbnail, in two sections: **My playlists** and **YouTube**. A playlist screen lists its videos; tapping
-  one opens the video. Pull-to-refresh loads the YouTube playlists again.
+  thumbnail, in two sections: **My playlists** and **YouTube**. A playlist screen lists its videos with
+  **Play all**; tapping a video plays the playlist from that video on. Pull-to-refresh loads the YouTube playlists again.
 - YouTube playlists are a read-only copy of the account's playlists. They are loaded when the tab opens
   (once per screen) and on pull-to-refresh: `playlists.list?mine=true` (1 unit per 50 playlists),
   `playlistItems.list` per playlist (1 unit per 50 videos) and `videos.list` for all their videos
@@ -118,6 +118,8 @@ Implemented as the `ShortsDetector` strategy:
   with `rel=0`, so related videos at the end come from the same channel only.
 - Title, channel, and a selectable description that can be expanded and collapsed.
 - Playback survives screen rotation.
+- A playlist plays in order: when a video ends, the next one starts. A bar under the player shows
+  "‹playlist› · 3 of 12" with **Previous** and **Next**. Back returns to the playlist.
 - **Save to playlist** opens a sheet with the app playlists, ticked when they contain the video, and
   **New playlist**, which creates a playlist with the video.
 - For a video of a channel that is not subscribed (opened from the search), an **Add channel to

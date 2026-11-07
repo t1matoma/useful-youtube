@@ -13,17 +13,20 @@ import dev.satoshi.usefulyoutube.core.model.PlaylistSource
 import dev.satoshi.usefulyoutube.core.model.Video
 import dev.satoshi.usefulyoutube.core.model.VideoId
 import dev.satoshi.usefulyoutube.feature.player.navigation.PlayerDestination
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /** State of the "Save to playlist" sheet of the player, kept apart from the playback state. */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class SaveToPlaylistViewModel
     @Inject
@@ -40,13 +43,14 @@ class SaveToPlaylistViewModel
             val newPlaylistTitle: String? = null,
         )
 
-        private val videoId = VideoId(checkNotNull(savedStateHandle[PlayerDestination.VIDEO_ID_ARGUMENT]))
+        private val videoId =
+            MutableStateFlow(VideoId(checkNotNull(savedStateHandle[PlayerDestination.VIDEO_ID_ARGUMENT])))
         private val sheetState = MutableStateFlow(SheetState())
 
         val uiState: StateFlow<SaveToPlaylistUiState> =
             combine(
                 observePlaylists(),
-                observePlaylistsContainingVideo(videoId),
+                videoId.flatMapLatest { observePlaylistsContainingVideo(it) },
                 sheetState,
             ) { playlists, containing, sheet ->
                 SaveToPlaylistUiState(
@@ -61,6 +65,10 @@ class SaveToPlaylistViewModel
 
         fun onEvent(event: SaveToPlaylistUiEvent) {
             when (event) {
+                is SaveToPlaylistUiEvent.VideoChanged -> {
+                    videoId.value = event.videoId
+                }
+
                 SaveToPlaylistUiEvent.SaveClicked -> {
                     sheetState.update { it.copy(isSheetVisible = true) }
                 }
@@ -100,7 +108,7 @@ class SaveToPlaylistViewModel
         }
 
         private fun withVideo(action: suspend (Video) -> Unit) {
-            viewModelScope.launch { observeVideo(videoId).first()?.let { action(it) } }
+            viewModelScope.launch { observeVideo(videoId.value).first()?.let { action(it) } }
         }
 
         private companion object {

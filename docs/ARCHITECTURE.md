@@ -204,6 +204,11 @@ videos. `PlaylistsViewModel` syncs once on creation and on pull-to-refresh; `Aut
 means "not connected", and **Connect** uses `AccountConsent` like the import screen. `ObserveVideoUseCase` also looks into `playlist_items`, so the player opens saved videos
 of any channel.
 
+`PlayerDestination(videoId, playlistId?)` plays a playlist. `PlayerViewModel` keeps the current video in
+its `SavedStateHandle` and switches it inside the screen on **Previous**, **Next** and the player's
+`ENDED` state, so back navigation returns to the playlist. `YouTubePlayer` loads a new video when its
+`videoId` changes. `PlayerRoute` passes the current video to the save sheet (`VideoChanged`).
+
 The player's **Save to playlist** sheet has its own `SaveToPlaylistViewModel` in `:feature:player`
 (`save/`). `PlayerRoute` creates both ViewModels for the same back stack entry; this keeps the playback
 state apart from the sheet state.
@@ -244,7 +249,7 @@ screens' own scaffolds do not pad twice.
 | Screen | State | Notes |
 |---|---|---|
 | Feed | sealed: `Loading`, `Empty`, `Error`, `Content` | refreshes on open, pull-to-refresh; an error over stored content is shown once in a snackbar |
-| Video | sealed: `Loading`, `NotFound`, `Content` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`); **Add channel** for videos of other channels |
+| Video | sealed: `Loading`, `NotFound`, `Content(queue)` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`); **Add channel** for videos of other channels; playlist queue with autoplay |
 | Channels | data class | inline error under the input, removal with confirmation |
 | Search | data class | query field, order chips, recent queries, results with **Show more**; reads the stored search |
 | Playlists | data class | app and YouTube sections, account state, sync with pull-to-refresh, consent, **New playlist** dialog |

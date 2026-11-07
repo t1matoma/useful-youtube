@@ -9,7 +9,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,8 +24,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.satoshi.usefulyoutube.core.model.PlaylistId
 import dev.satoshi.usefulyoutube.core.model.PlaylistSource
 import dev.satoshi.usefulyoutube.core.model.VideoId
 import dev.satoshi.usefulyoutube.core.ui.component.LoadingContent
@@ -31,10 +35,12 @@ import dev.satoshi.usefulyoutube.core.ui.component.MessageContent
 import dev.satoshi.usefulyoutube.core.ui.component.TextInputDialog
 import dev.satoshi.usefulyoutube.core.ui.video.VideoCard
 
+private val PlayAllPadding = 12.dp
+
 @Composable
 fun PlaylistRoute(
     onNavigateBack: () -> Unit,
-    onVideoClick: (VideoId) -> Unit,
+    onPlay: (VideoId, PlaylistId) -> Unit,
     viewModel: PlaylistViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -42,7 +48,7 @@ fun PlaylistRoute(
         state = state,
         onEvent = viewModel::onEvent,
         onNavigateBack = onNavigateBack,
-        onVideoClick = onVideoClick,
+        onPlay = onPlay,
     )
 }
 
@@ -52,7 +58,8 @@ fun PlaylistScreen(
     state: PlaylistUiState,
     onEvent: (PlaylistUiEvent) -> Unit,
     onNavigateBack: () -> Unit,
-    onVideoClick: (VideoId) -> Unit,
+    /** Plays the playlist from the given video on. */
+    onPlay: (VideoId, PlaylistId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val content = state as? PlaylistUiState.Content
@@ -113,7 +120,7 @@ fun PlaylistScreen(
             }
 
             is PlaylistUiState.Content -> {
-                PlaylistVideos(state, isEditable, onEvent, onVideoClick, contentModifier)
+                PlaylistVideos(state, isEditable, onEvent, onPlay, contentModifier)
             }
         }
     }
@@ -125,18 +132,35 @@ private fun PlaylistVideos(
     state: PlaylistUiState.Content,
     isEditable: Boolean,
     onEvent: (PlaylistUiEvent) -> Unit,
-    onVideoClick: (VideoId) -> Unit,
+    onPlay: (VideoId, PlaylistId) -> Unit,
     modifier: Modifier,
 ) {
+    val playlistId = state.playlist.playlist.id
     if (state.playlist.videos.isEmpty()) {
         MessageContent(message = stringResource(R.string.feature_playlists_no_videos), modifier = modifier)
         return
     }
     LazyColumn(modifier = modifier) {
+        item(key = "play-all") {
+            Button(
+                onClick = {
+                    onPlay(
+                        state.playlist.videos
+                            .first()
+                            .id,
+                        playlistId,
+                    )
+                },
+                modifier = Modifier.padding(PlayAllPadding),
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null)
+                Text(stringResource(R.string.feature_playlists_play_all))
+            }
+        }
         items(state.playlist.videos, key = { it.id.value }) { video ->
             VideoCard(
                 video = video,
-                onClick = { onVideoClick(video.id) },
+                onClick = { onPlay(video.id, playlistId) },
                 action =
                     if (isEditable) {
                         {

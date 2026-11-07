@@ -3,6 +3,7 @@ package dev.satoshi.usefulyoutube.feature.player
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,6 +12,8 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,7 +24,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +54,10 @@ fun PlayerRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val saveState by saveViewModel.uiState.collectAsStateWithLifecycle()
+    // The sheet saves the video that is playing now, which changes while a playlist plays.
+    (state as? PlayerUiState.Content)?.video?.id?.let { videoId ->
+        LaunchedEffect(videoId) { saveViewModel.onEvent(SaveToPlaylistUiEvent.VideoChanged(videoId)) }
+    }
     PlayerScreen(
         state = state,
         onEvent = viewModel::onEvent,
@@ -110,7 +119,12 @@ private fun VideoContent(
     modifier: Modifier,
 ) {
     Column(modifier = modifier) {
-        YouTubePlayer(videoId = state.video.id, modifier = Modifier.fillMaxWidth())
+        YouTubePlayer(
+            videoId = state.video.id,
+            onVideoEnded = { onEvent(PlayerUiEvent.VideoEnded) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        state.queue?.let { queue -> QueueControls(queue, onEvent) }
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()).padding(ContentPadding),
             verticalArrangement = Arrangement.spacedBy(ItemSpacing),
@@ -171,5 +185,42 @@ private fun SubscribeButton(
 ) {
     OutlinedButton(onClick = { onEvent(PlayerUiEvent.SubscribeToChannel) }, enabled = !state.isSubscribing) {
         Text(stringResource(R.string.feature_player_subscribe))
+    }
+}
+
+@Composable
+private fun QueueControls(
+    queue: PlaybackQueue,
+    onEvent: (PlayerUiEvent) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = ContentPadding),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text =
+                stringResource(
+                    R.string.feature_player_queue_position,
+                    queue.playlistTitle,
+                    queue.position,
+                    queue.size,
+                ),
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = { onEvent(PlayerUiEvent.PreviousClicked) }, enabled = queue.hasPrevious) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                contentDescription = stringResource(R.string.feature_player_previous),
+            )
+        }
+        IconButton(onClick = { onEvent(PlayerUiEvent.NextClicked) }, enabled = queue.hasNext) {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = stringResource(R.string.feature_player_next),
+            )
+        }
     }
 }

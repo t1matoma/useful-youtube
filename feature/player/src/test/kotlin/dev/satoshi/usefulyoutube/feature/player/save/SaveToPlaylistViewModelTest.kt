@@ -103,4 +103,26 @@ class SaveToPlaylistViewModelTest {
             ).isEqualTo("Talks")
             assertThat(playlists.currentPlaylists.single().videos).containsExactly(video)
         }
+
+    @Test
+    fun `sheet follows the video that is playing now`() =
+        runTest {
+            val other = TestData.video("other")
+            val later = playlists.givenPlaylist("Later", videos = listOf(other))
+            collectInBackground(viewModel.uiState)
+            advanceUntilIdle()
+            assertThat(
+                viewModel.uiState.value.playlists
+                    .single()
+                    .containsVideo,
+            ).isEqualTo(false)
+
+            viewModel.onEvent(SaveToPlaylistUiEvent.VideoChanged(other.id))
+            advanceUntilIdle()
+
+            assertThat(
+                viewModel.uiState.value.playlists
+                    .single(),
+            ).isEqualTo(PlaylistOption(later, "Later", containsVideo = true))
+        }
 }
