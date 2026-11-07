@@ -16,6 +16,7 @@ import dev.satoshi.usefulyoutube.core.model.ChannelId
 import dev.satoshi.usefulyoutube.core.model.DataError
 import dev.satoshi.usefulyoutube.core.model.VideoContentKind
 import dev.satoshi.usefulyoutube.core.model.VideoId
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -49,6 +50,27 @@ class OfflineFirstVideoRepositoryTest : RepositoryTest() {
                 feed("Channel", entry("v1", channelId.value, published = "yesterday"), entry("v2", channelId.value))
 
             assertThat(repository.syncChannelFeed(channelId)).isEqualTo(AppResult.Success(1))
+        }
+
+    @Test
+    fun `entries whose channel id differs from the feed's channel are stored under the feed's channel`() =
+        runTest(testDispatcher) {
+            // Real feeds can carry an id that does not match the subscription, for example without "UC".
+            network.feeds[channelId.value] =
+                feed("Channel", entry("v1", channelId.value.removePrefix("UC")), entry("v2", "UCsomebodyElse"))
+
+            assertThat(repository.syncChannelFeed(channelId)).isEqualTo(AppResult.Success(2))
+            assertThat(repository.observeVideo(VideoId("v1")).first()?.channelId).isEqualTo(channelId)
+            assertThat(repository.observeVideo(VideoId("v2")).first()?.channelTitle).isEqualTo("Channel title")
+        }
+
+    @Test
+    fun `feed of a channel removed during the refresh is ignored`() =
+        runTest(testDispatcher) {
+            val removed = ChannelId("UCremoved")
+            network.feeds[removed.value] = feed("Removed", entry("v1", removed.value))
+
+            assertThat(repository.syncChannelFeed(removed)).isEqualTo(AppResult.Success(0))
         }
 
     @Test

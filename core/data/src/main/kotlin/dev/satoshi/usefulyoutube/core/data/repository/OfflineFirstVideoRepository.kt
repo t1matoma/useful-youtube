@@ -1,5 +1,6 @@
 package dev.satoshi.usefulyoutube.core.data.repository
 
+import android.database.sqlite.SQLiteConstraintException
 import dev.satoshi.usefulyoutube.core.data.di.IoDispatcher
 import dev.satoshi.usefulyoutube.core.data.mapper.toDetailsUpdate
 import dev.satoshi.usefulyoutube.core.data.mapper.toShortsCandidate
@@ -7,6 +8,7 @@ import dev.satoshi.usefulyoutube.core.data.mapper.toVideo
 import dev.satoshi.usefulyoutube.core.data.mapper.toVideoEntity
 import dev.satoshi.usefulyoutube.core.database.dao.VideoDao
 import dev.satoshi.usefulyoutube.core.database.entity.VideoContentKindUpdate
+import dev.satoshi.usefulyoutube.core.database.entity.VideoEntity
 import dev.satoshi.usefulyoutube.core.domain.repository.VideoRepository
 import dev.satoshi.usefulyoutube.core.domain.shorts.ShortsCandidate
 import dev.satoshi.usefulyoutube.core.model.AppResult
@@ -42,9 +44,17 @@ internal class OfflineFirstVideoRepository
                 }
 
                 is AppResult.Success -> {
-                    val entities = feed.value.entries.mapNotNull { it.toVideoEntity() }
-                    AppResult.Success(videoDao.insertOrIgnore(entities).count { it != ALREADY_EXISTS })
+                    val entities = feed.value.entries.mapNotNull { it.toVideoEntity(channelId.value) }
+                    AppResult.Success(insertNewVideos(entities))
                 }
+            }
+
+        /** A channel removed while its feed was loading has nothing to store, so its videos are dropped. */
+        private suspend fun insertNewVideos(entities: List<VideoEntity>): Int =
+            try {
+                videoDao.insertOrIgnore(entities).count { it != ALREADY_EXISTS }
+            } catch (_: SQLiteConstraintException) {
+                0
             }
 
         override suspend fun fetchMissingDetails(): AppResult<Unit, DataError> {

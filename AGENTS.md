@@ -183,6 +183,9 @@ Environment:
 - `search.list` costs 100 quota units per page. Never load search pages automatically.
 - Create ViewModels inside the test or `by lazy`, not as a field initializer: `viewModelScope` captures
   `Dispatchers.Main.immediate` when the ViewModel is created, before `MainDispatcherRule` replaces it.
+- Do not trust `yt:channelId` of RSS feeds: the feed header carries it without the `UC` prefix and it may
+  differ from the subscription. Videos take the id of the channel whose feed was requested; a mismatch
+  used to fail the `videos.channel_id` foreign key and crash the app on refresh.
 - Compute expected values in tests (for example epoch milliseconds) instead of writing them from memory.
 - The newest Android cmdline-tools may hang while redirecting `sdkmanager` to the new Android CLI.
   cmdline-tools 19.0 works; run `sdkmanager` with stdin closed (`</dev/null`).

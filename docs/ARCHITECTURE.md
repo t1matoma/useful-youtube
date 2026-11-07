@@ -96,7 +96,9 @@ UI (Compose)  ──onEvent(UiEvent)──▶  ViewModel  ──▶  UseCase  �
 1. Loads the RSS feed of every channel in parallel, at most 8 requests at a time (`Semaphore`):
    `https://www.youtube.com/feeds/videos.xml?channel_id={id}`.
 2. Stores new videos with `content_kind = UNCLASSIFIED` and `details_fetched = 0`;
-   existing rows are never overwritten.
+   existing rows are never overwritten. A video belongs to the channel whose feed was requested, not to
+   the feed's `yt:channelId`, which does not always match the subscription. A channel removed while its
+   feed was loading is skipped.
 3. Requests `videos.list?part=contentDetails,snippet` for videos without details, in batches of 50 ids,
    and stores the ISO 8601 duration and the full description.
 4. Runs videos that have details but no kind through `ShortsDetector` (also at most 8 at a time)

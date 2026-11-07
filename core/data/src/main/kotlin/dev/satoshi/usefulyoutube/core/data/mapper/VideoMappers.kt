@@ -30,12 +30,15 @@ internal fun VideoWithChannel.toVideo() =
         contentKind = video.contentKind,
     )
 
-/** Returns `null` when the entry has an unparsable publication date. */
-internal fun RssEntryDto.toVideoEntity(): VideoEntity? {
+/**
+ * Returns `null` when the entry has an unparsable publication date. The video belongs to [feedChannelId], the
+ * channel whose feed was requested: the `yt:channelId` of real feeds does not always match it.
+ */
+internal fun RssEntryDto.toVideoEntity(feedChannelId: String): VideoEntity? {
     val publishedAt = Instant.parseOrNull(published) ?: return null
     return VideoEntity(
         id = videoId,
-        channelId = channelId,
+        channelId = feedChannelId,
         title = title,
         description = mediaGroup?.description.orEmpty(),
         publishedAtEpochMillis = publishedAt.toEpochMilliseconds(),

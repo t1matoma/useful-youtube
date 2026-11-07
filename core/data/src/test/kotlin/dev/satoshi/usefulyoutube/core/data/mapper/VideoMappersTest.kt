@@ -27,7 +27,7 @@ class VideoMappersTest {
 
     @Test
     fun `rss entry becomes unclassified video without details`() {
-        val entity = entry("v1", "UCchannel", published = "2026-10-30T19:00:06+03:00").toVideoEntity()
+        val entity = entry("v1", "UCchannel", published = "2026-10-30T19:00:06+03:00").toVideoEntity("UCchannel")
 
         assertThat(entity?.publishedAtEpochMillis).isEqualTo(1_793_376_006_000L)
         assertThat(entity?.contentKind).isEqualTo(VideoContentKind.UNCLASSIFIED)
@@ -37,7 +37,7 @@ class VideoMappersTest {
 
     @Test
     fun `rss entry without media group gets default thumbnail and empty description`() {
-        val entity = entry("v1", "UCchannel").copy(mediaGroup = null).toVideoEntity()
+        val entity = entry("v1", "UCchannel").copy(mediaGroup = null).toVideoEntity("UCchannel")
 
         assertThat(entity?.thumbnailUrl).isEqualTo("https://i.ytimg.com/vi/v1/hqdefault.jpg")
         assertThat(entity?.description).isEqualTo("")
