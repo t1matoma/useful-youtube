@@ -8,6 +8,7 @@ import dev.satoshi.usefulyoutube.core.domain.usecase.AddChannelUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveChannelsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaylistUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveVideoUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.RecordWatchUseCase
 import dev.satoshi.usefulyoutube.core.model.AppResult
 import dev.satoshi.usefulyoutube.core.model.ChannelError
 import dev.satoshi.usefulyoutube.core.model.PlaylistId
@@ -40,6 +41,7 @@ class PlayerViewModel
         observeChannels: ObserveChannelsUseCase,
         observePlaylist: ObservePlaylistUseCase,
         private val addChannel: AddChannelUseCase,
+        private val recordWatch: RecordWatchUseCase,
     ) : ViewModel() {
         private data class ScreenState(
             val isDescriptionExpanded: Boolean = false,
@@ -62,6 +64,9 @@ class PlayerViewModel
                     ?: flowOf(null)
             ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
         private val screenState = MutableStateFlow(ScreenState())
+
+        /** Pausing and resuming does not move the video to the top of the history again. */
+        private var recordedVideoId: VideoId? = null
 
         val uiState: StateFlow<PlayerUiState> =
             combine(
@@ -94,6 +99,10 @@ class PlayerViewModel
                     subscribe()
                 }
 
+                PlayerUiEvent.PlaybackStarted -> {
+                    recordPlayback()
+                }
+
                 PlayerUiEvent.PreviousClicked -> {
                     moveBy(-1)
                 }
@@ -111,6 +120,13 @@ class PlayerViewModel
             val next = videos.getOrNull(index + offset)?.id ?: return
             screenState.value = ScreenState()
             savedStateHandle[CURRENT_VIDEO_KEY] = next.value
+        }
+
+        private fun recordPlayback() {
+            val video = (uiState.value as? PlayerUiState.Content)?.video ?: return
+            if (video.id == recordedVideoId) return
+            recordedVideoId = video.id
+            viewModelScope.launch { recordWatch(video) }
         }
 
         /** The channel id is verified through its RSS feed, which costs no Data API quota. */

@@ -10,6 +10,7 @@ import dev.satoshi.usefulyoutube.core.model.VideoContentKind
 import dev.satoshi.usefulyoutube.core.model.VideoId
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeChannelRepository
+import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakePlaylistRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeSearchRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeVideoRepository
@@ -35,7 +36,13 @@ class ObservationUseCasesTest {
     @Test
     fun `video is observed by id`() =
         runTest {
-            val observeVideo = ObserveVideoUseCase(videoRepository, FakeSearchRepository(), FakePlaylistRepository())
+            val observeVideo =
+                ObserveVideoUseCase(
+                    videoRepository,
+                    FakeSearchRepository(),
+                    FakePlaylistRepository(),
+                    FakeHistoryRepository(),
+                )
 
             observeVideo(older.id).test { assertThat(awaitItem()).isEqualTo(older) }
             observeVideo(VideoId("missing")).test { assertThat(awaitItem()).isNull() }

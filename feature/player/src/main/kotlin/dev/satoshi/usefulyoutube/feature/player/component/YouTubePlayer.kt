@@ -40,16 +40,18 @@ private class PlayerController {
     }
 }
 
-/** Official YouTube IFrame player that plays [videoId] and reports when a video has ended. */
+/** Official YouTube IFrame player that plays [videoId] and reports when playback starts and ends. */
 @Composable
 internal fun YouTubePlayer(
     videoId: VideoId,
+    onPlaybackStarted: () -> Unit,
     onVideoEnded: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val controller = remember { PlayerController() }
     val currentVideoId by rememberUpdatedState(videoId)
+    val currentOnPlaybackStarted by rememberUpdatedState(onPlaybackStarted)
     val currentOnVideoEnded by rememberUpdatedState(onVideoEnded)
     AndroidView(
         modifier = modifier,
@@ -74,7 +76,17 @@ internal fun YouTubePlayer(
                             youTubePlayer: YouTubePlayer,
                             state: PlayerConstants.PlayerState,
                         ) {
-                            if (state == PlayerConstants.PlayerState.ENDED) currentOnVideoEnded()
+                            when (state) {
+                                PlayerConstants.PlayerState.PLAYING -> {
+                                    currentOnPlaybackStarted()
+                                }
+
+                                PlayerConstants.PlayerState.ENDED -> {
+                                    currentOnVideoEnded()
+                                }
+
+                                else -> {}
+                            }
                         }
                     },
                     options,

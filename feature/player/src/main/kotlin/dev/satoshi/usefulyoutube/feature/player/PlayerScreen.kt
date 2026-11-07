@@ -121,6 +121,7 @@ private fun VideoContent(
     Column(modifier = modifier) {
         YouTubePlayer(
             videoId = state.video.id,
+            onPlaybackStarted = { onEvent(PlayerUiEvent.PlaybackStarted) },
             onVideoEnded = { onEvent(PlayerUiEvent.VideoEnded) },
             modifier = Modifier.fillMaxWidth(),
         )

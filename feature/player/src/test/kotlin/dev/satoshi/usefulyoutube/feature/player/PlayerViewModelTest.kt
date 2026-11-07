@@ -2,6 +2,8 @@ package dev.satoshi.usefulyoutube.feature.player
 
 import androidx.lifecycle.SavedStateHandle
 import assertk.assertThat
+import assertk.assertions.containsExactly
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import dev.satoshi.usefulyoutube.core.domain.channel.ChannelInputParser
@@ -11,6 +13,7 @@ import dev.satoshi.usefulyoutube.core.domain.usecase.AddChannelUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveChannelsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaylistUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveVideoUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.RecordWatchUseCase
 import dev.satoshi.usefulyoutube.core.model.Channel
 import dev.satoshi.usefulyoutube.core.model.ChannelError
 import dev.satoshi.usefulyoutube.core.model.ChannelId
@@ -21,6 +24,7 @@ import dev.satoshi.usefulyoutube.core.testing.MainDispatcherRule
 import dev.satoshi.usefulyoutube.core.testing.collectInBackground
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeChannelRepository
+import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakePlaylistRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeSearchRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeVideoRepository
@@ -41,6 +45,7 @@ class PlayerViewModelTest {
     private val foundVideo = TestData.video(id = "found", channel = otherChannel)
     private val channelRepository = FakeChannelRepository(listOf(TestData.firstChannel))
     private val playlistRepository = FakePlaylistRepository()
+    private val historyRepository = FakeHistoryRepository()
     private val searchRepository =
         FakeSearchRepository(SearchSession("q", SearchOrder.RELEVANCE, null), listOf(foundVideo))
 
@@ -60,10 +65,12 @@ class PlayerViewModelTest {
                 FakeVideoRepository(listOf(video)),
                 searchRepository,
                 playlistRepository,
+                historyRepository,
             ),
         observeChannels = ObserveChannelsUseCase(channelRepository),
         observePlaylist = ObservePlaylistUseCase(playlistRepository),
         addChannel = AddChannelUseCase(ChannelInputParser(), channelRepository),
+        recordWatch = RecordWatchUseCase(historyRepository),
     )
 
     @Test
@@ -193,5 +200,34 @@ class PlayerViewModelTest {
 
             assertThat(viewModel.content.queue).isNull()
             assertThat(viewModel.content.video).isEqualTo(video)
+        }
+
+    @Test
+    fun `started playback is recorded once per video`() =
+        runTest {
+            val playlistId =
+                playlistRepository.givenPlaylist("Talks", videos = listOf(TestData.video("p1"), TestData.video("p2")))
+            val viewModel = createViewModel("p1", playlistId)
+            collectInBackground(viewModel.uiState)
+            advanceUntilIdle()
+
+            viewModel.onEvent(PlayerUiEvent.PlaybackStarted)
+            viewModel.onEvent(PlayerUiEvent.PlaybackStarted)
+            viewModel.onEvent(PlayerUiEvent.VideoEnded)
+            advanceUntilIdle()
+            viewModel.onEvent(PlayerUiEvent.PlaybackStarted)
+            advanceUntilIdle()
+
+            assertThat(historyRepository.currentHistory.map { it.video.id.value }).containsExactly("p2", "p1")
+        }
+
+    @Test
+    fun `opened but not played video is not recorded`() =
+        runTest {
+            val viewModel = createViewModel("abc")
+            collectInBackground(viewModel.uiState)
+            advanceUntilIdle()
+
+            assertThat(historyRepository.currentHistory).isEmpty()
         }
 }

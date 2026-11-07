@@ -7,6 +7,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.satoshi.usefulyoutube.core.data.playlists.NetworkAccountPlaylistsReader
 import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstChannelRepository
+import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstHistoryRepository
 import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstMirroredPlaylistRepository
 import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstPlaylistRepository
 import dev.satoshi.usefulyoutube.core.data.repository.OfflineFirstSearchRepository
@@ -17,6 +18,7 @@ import dev.satoshi.usefulyoutube.core.data.subscriptions.NetworkAccountSubscript
 import dev.satoshi.usefulyoutube.core.domain.repository.AccountPlaylistsReader
 import dev.satoshi.usefulyoutube.core.domain.repository.AccountSubscriptionsReader
 import dev.satoshi.usefulyoutube.core.domain.repository.ChannelRepository
+import dev.satoshi.usefulyoutube.core.domain.repository.HistoryRepository
 import dev.satoshi.usefulyoutube.core.domain.repository.MirroredPlaylistRepository
 import dev.satoshi.usefulyoutube.core.domain.repository.PlaylistRepository
 import dev.satoshi.usefulyoutube.core.domain.repository.SearchRepository
@@ -49,6 +51,10 @@ internal abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindPlaylistRepository(repository: OfflineFirstPlaylistRepository): PlaylistRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindHistoryRepository(repository: OfflineFirstHistoryRepository): HistoryRepository
 
     @Binds
     abstract fun bindMirroredPlaylistRepository(

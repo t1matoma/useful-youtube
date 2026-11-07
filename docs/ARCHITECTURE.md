@@ -151,9 +151,9 @@ Google API errors from the response body (`errors[].reason`, `details[].reason`)
 
 ## Database
 
-Room, schema version 3, exported to `core/database/schemas/`. Version 2 added the search tables and
-version 3 the playlist tables, both with `@AutoMigration`; `MigrationTest` checks them against the
-exported schemas.
+Room, schema version 4, exported to `core/database/schemas/`. Version 2 added the search tables,
+version 3 the playlist tables and version 4 the watch history, all with `@AutoMigration`; `MigrationTest`
+checks them against the exported schemas.
 
 | Table | Columns |
 |---|---|
@@ -163,10 +163,11 @@ exported schemas.
 | `search_session` | one row: `query_text`, `sort_order`, `next_page_token` (`NULL` when there are no more pages) |
 | `recent_search_queries` | `query_text` (PK), `used_order` (larger is more recent; at most 10 rows) |
 | `playlists` | `id` (PK, autoincrement), `title`, `remote_id` (unique; YouTube playlist id, `NULL` for app playlists), `synced_at` |
+| `watch_history` | `video_id` (PK), `watched_at`, and the `VideoSnapshot` columns; at most 500 rows |
 | `playlist_items` | `playlist_id` (FK → playlists, `ON DELETE CASCADE`), `video_id`, `position`, and the `VideoSnapshot` columns; PK (`playlist_id`, `video_id`) |
 
 Indices: `videos.channel_id`, `videos.published_at`, `search_results.position`, unique
-`playlists.remote_id`, `playlist_items.video_id`. `VideoSnapshot` is an `@Embedded` copy of a video for
+`playlists.remote_id`, `playlist_items.video_id`, `watch_history.watched_at`. `VideoSnapshot` is an `@Embedded` copy of a video for
 tables that keep videos independently of the subscriptions. DAO methods that change playlists only touch
 app playlists (`remote_id IS NULL`). Details and kinds are written with partial `@Update`s
 (`VideoDetailsUpdate`, `VideoContentKindUpdate`). Any schema change needs a version bump and a migration.
@@ -212,6 +213,12 @@ its `SavedStateHandle` and switches it inside the screen on **Previous**, **Next
 The player's **Save to playlist** sheet has its own `SaveToPlaylistViewModel` in `:feature:player`
 (`save/`). `PlayerRoute` creates both ViewModels for the same back stack entry; this keeps the playback
 state apart from the sheet state.
+
+## Watch history
+
+`YouTubePlayer` reports `PLAYING`; `PlayerViewModel` sends the current video to `RecordWatchUseCase` once
+per video. `HistoryRepository` stores it with the injected `Clock` and `WatchHistoryDao.record` trims the
+table to 500 rows in the same transaction. `ObserveVideoUseCase` also looks into the history.
 
 ## Channels and import
 

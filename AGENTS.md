@@ -174,8 +174,9 @@ Environment:
   `AccountAuthorizer.withAccessToken`, which clears a rejected token and retries once.
 - `IntentSender` cannot be created in plain JVM tests; ViewModel tests that need one run on Robolectric.
 - The `import` keyword cannot be a package segment, so `:feature:import` uses `feature.subscriptionimport`.
-- `MigrationTestHelper` reads the schemas from the test assets; `:core:database` adds `schemas/` to them.
-  Run `:core:database:check` after a schema change so the new `N.json` is generated, and commit it.
+- `MigrationTestHelper` reads the schemas from the test assets; `:core:database` adds `schemas/` to them
+  and makes the unit test assets depend on `copyRoomSchemas`, so a new `N.json` is available in the same
+  run. Commit the new `N.json`.
 - detekt's `TooManyFunctions` (10 per class or interface) also counts DAO, repository and fake methods;
   split by responsibility instead of suppressing it (`SearchDao`/`RecentSearchQueryDao`,
   `PlaylistRepository`/`MirroredPlaylistRepository`).

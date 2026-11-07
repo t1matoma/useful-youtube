@@ -15,6 +15,7 @@ import dev.satoshi.usefulyoutube.core.model.PlaylistSource
 import dev.satoshi.usefulyoutube.core.testing.MainDispatcherRule
 import dev.satoshi.usefulyoutube.core.testing.collectInBackground
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
+import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakePlaylistRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeSearchRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeVideoRepository
@@ -37,7 +38,13 @@ class SaveToPlaylistViewModelTest {
             savedStateHandle = SavedStateHandle(mapOf(PlayerDestination.VIDEO_ID_ARGUMENT to video.id.value)),
             observePlaylists = ObservePlaylistsUseCase(playlists),
             observePlaylistsContainingVideo = ObservePlaylistsContainingVideoUseCase(playlists),
-            observeVideo = ObserveVideoUseCase(FakeVideoRepository(listOf(video)), FakeSearchRepository(), playlists),
+            observeVideo =
+                ObserveVideoUseCase(
+                    FakeVideoRepository(listOf(video)),
+                    FakeSearchRepository(),
+                    playlists,
+                    FakeHistoryRepository(),
+                ),
             setVideoInPlaylist = SetVideoInPlaylistUseCase(playlists),
             createPlaylist = CreatePlaylistUseCase(playlists),
         )

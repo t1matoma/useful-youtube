@@ -16,6 +16,7 @@ import dev.satoshi.usefulyoutube.core.model.SearchResults
 import dev.satoshi.usefulyoutube.core.model.VideoContentKind
 import dev.satoshi.usefulyoutube.core.model.VideoId
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
+import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakePlaylistRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeSearchRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeVideoRepository
@@ -153,7 +154,12 @@ class SearchUseCasesTest {
                 listOf(foundVersion, otherChannelVideo),
             )
             val observeVideo =
-                ObserveVideoUseCase(FakeVideoRepository(listOf(feedVideo)), repository, FakePlaylistRepository())
+                ObserveVideoUseCase(
+                    FakeVideoRepository(listOf(feedVideo)),
+                    repository,
+                    FakePlaylistRepository(),
+                    FakeHistoryRepository(),
+                )
 
             observeVideo(VideoId("shared")).test { assertThat(awaitItem()).isEqualTo(feedVideo) }
             observeVideo(VideoId("other")).test { assertThat(awaitItem()).isEqualTo(otherChannelVideo) }

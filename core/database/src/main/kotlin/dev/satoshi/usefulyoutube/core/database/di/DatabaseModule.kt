@@ -15,6 +15,7 @@ import dev.satoshi.usefulyoutube.core.database.dao.PlaylistItemDao
 import dev.satoshi.usefulyoutube.core.database.dao.RecentSearchQueryDao
 import dev.satoshi.usefulyoutube.core.database.dao.SearchDao
 import dev.satoshi.usefulyoutube.core.database.dao.VideoDao
+import dev.satoshi.usefulyoutube.core.database.dao.WatchHistoryDao
 import javax.inject.Singleton
 
 @Module
@@ -51,4 +52,7 @@ internal object DatabaseModule {
     @Provides
     fun provideMirroredPlaylistDao(database: UsefulYouTubeDatabase): MirroredPlaylistDao =
         database.mirroredPlaylistDao()
+
+    @Provides
+    fun provideWatchHistoryDao(database: UsefulYouTubeDatabase): WatchHistoryDao = database.watchHistoryDao()
 }

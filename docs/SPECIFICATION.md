@@ -105,6 +105,16 @@ Implemented as the `ShortsDetector` strategy:
 - Without a connected account the YouTube section offers **Connect YouTube account**, which shows the
   Google consent screen. "Watch later" is not available: the Data API does not return it.
 
+### Watch history
+
+- Stored only on the device: the Data API does not return the account's history. Costs no quota.
+- A video is recorded when its playback starts (the player reports `PLAYING`), not when the screen opens;
+  pausing and resuming does not record it again. Every video of a played playlist is recorded.
+- Each video appears once; watching it again moves it to the top with the new time. Only the 500 most
+  recently watched videos are kept.
+- The history keeps a copy of the video's data, so its videos play even if they left the feed, the search
+  and the playlists.
+
 ### Feed screen
 
 - All regular videos and live streams/premieres of all subscriptions, newest first.
