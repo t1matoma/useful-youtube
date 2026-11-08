@@ -22,8 +22,11 @@ private const val RELATED_VIDEOS_FROM_SAME_CHANNEL_ONLY = 0
 private const val HIDE_ANNOTATIONS = 3
 private const val START_SECONDS = 0f
 
-/** Loads a video once the player is ready and every time [videoId] changes afterwards. */
-private class PlayerController {
+/**
+ * Loads a video once the player is ready and every time the video id changes afterwards; plays and pauses it
+ * from outside the player, for example from the picture-in-picture window.
+ */
+internal class PlayerController {
     private var player: YouTubePlayer? = null
     private var loadedVideoId: String? = null
 
@@ -40,6 +43,14 @@ private class PlayerController {
         if (videoId == loadedVideoId) return
         loadedVideoId = videoId
         readyPlayer.loadVideo(videoId, START_SECONDS)
+    }
+
+    fun play() {
+        player?.play()
+    }
+
+    fun pause() {
+        player?.pause()
     }
 }
 
@@ -65,9 +76,9 @@ internal fun YouTubePlayer(
     onEnterFullscreen: (FullscreenVideo) -> Unit,
     onExitFullscreen: () -> Unit,
     modifier: Modifier = Modifier,
+    controller: PlayerController = remember { PlayerController() },
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    val controller = remember { PlayerController() }
     val currentVideoId by rememberUpdatedState(videoId)
     val currentOnPlaybackStarted by rememberUpdatedState(onPlaybackStarted)
     val currentOnVideoEnded by rememberUpdatedState(onVideoEnded)

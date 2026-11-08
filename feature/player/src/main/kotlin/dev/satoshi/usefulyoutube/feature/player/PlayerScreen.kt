@@ -1,5 +1,6 @@
 package dev.satoshi.usefulyoutube.feature.player
 
+import android.graphics.Rect
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +33,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toAndroidRectF
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,9 +48,12 @@ import dev.satoshi.usefulyoutube.core.ui.error.message
 import dev.satoshi.usefulyoutube.core.ui.video.relativeDate
 import dev.satoshi.usefulyoutube.feature.player.component.FullscreenPlayer
 import dev.satoshi.usefulyoutube.feature.player.component.FullscreenVideo
+import dev.satoshi.usefulyoutube.feature.player.component.PictureInPictureEffect
+import dev.satoshi.usefulyoutube.feature.player.component.PlayerController
 import dev.satoshi.usefulyoutube.feature.player.component.QueueButton
 import dev.satoshi.usefulyoutube.feature.player.component.QueueControls
 import dev.satoshi.usefulyoutube.feature.player.component.YouTubePlayer
+import dev.satoshi.usefulyoutube.feature.player.component.rememberIsInPictureInPictureMode
 import dev.satoshi.usefulyoutube.feature.player.save.SaveToPlaylistSheet
 import dev.satoshi.usefulyoutube.feature.player.save.SaveToPlaylistUiEvent
 import dev.satoshi.usefulyoutube.feature.player.save.SaveToPlaylistUiState
@@ -94,13 +102,28 @@ fun PlayerScreen(
     // The fullscreen view belongs to the embedded player, so it is plain UI state and not part of the UiState.
     var fullscreenVideo by remember { mutableStateOf<FullscreenVideo?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
-    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    var videoBounds by remember { mutableStateOf<Rect?>(null) }
+    val playerController = remember { PlayerController() }
+    val isInPictureInPicture = rememberIsInPictureInPictureMode()
+    if (state is PlayerUiState.Content) {
+        PictureInPictureEffect(
+            isPlaying = isPlaying,
+            videoBounds = videoBounds,
+            onPlay = playerController::play,
+            onPause = playerController::pause,
+        )
+    }
+    val background = if (isInPictureInPicture) Color.Black else MaterialTheme.colorScheme.background
+    Box(modifier = modifier.fillMaxSize().background(background)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            IconButton(onClick = onNavigateBack, modifier = Modifier.padding(HeaderPadding)) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.feature_player_back),
-                )
+            // The picture-in-picture window shows only the video.
+            if (!isInPictureInPicture) {
+                IconButton(onClick = onNavigateBack, modifier = Modifier.padding(HeaderPadding)) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.feature_player_back),
+                    )
+                }
             }
             val contentModifier = Modifier.fillMaxWidth().weight(1f)
             when (state) {
@@ -116,7 +139,7 @@ fun PlayerScreen(
                 }
 
                 is PlayerUiState.Content -> {
-                    Column(modifier = contentModifier) {
+                    Column(modifier = contentModifier, verticalArrangement = Arrangement.Center) {
                         YouTubePlayer(
                             videoId = state.video.id,
                             onPlaybackStarted = { onEvent(PlayerUiEvent.PlaybackStarted) },
@@ -124,16 +147,22 @@ fun PlayerScreen(
                             onPlayingChange = { isPlaying = it },
                             onEnterFullscreen = { fullscreenVideo = it },
                             onExitFullscreen = { fullscreenVideo = null },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier =
+                                Modifier.fillMaxWidth().onGloballyPositioned {
+                                    videoBounds = Rect().apply { it.boundsInWindow().toAndroidRectF().roundOut(this) }
+                                },
+                            controller = playerController,
                         )
-                        VideoDetails(state, onEvent, onSaveEvent)
+                        if (!isInPictureInPicture) {
+                            VideoDetails(state, onEvent, onSaveEvent, modifier = Modifier.weight(1f))
+                        }
                     }
                 }
             }
         }
         fullscreenVideo?.let { video ->
             // Previous and next are shown while the video is paused, together with the player's own controls.
-            val queue = (state as? PlayerUiState.Content)?.queue?.takeUnless { isPlaying }
+            val queue = (state as? PlayerUiState.Content)?.queue?.takeUnless { isPlaying || isInPictureInPicture }
             FullscreenPlayer(
                 video = video,
                 sideControls =
@@ -146,7 +175,9 @@ fun PlayerScreen(
             )
         }
     }
-    SaveToPlaylistSheet(saveState, onSaveEvent)
+    if (!isInPictureInPicture) {
+        SaveToPlaylistSheet(saveState, onSaveEvent)
+    }
 }
 
 @Composable
@@ -154,9 +185,10 @@ private fun VideoDetails(
     state: PlayerUiState.Content,
     onEvent: (PlayerUiEvent) -> Unit,
     onSaveEvent: (SaveToPlaylistUiEvent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier.verticalScroll(rememberScrollState()).padding(ContentPadding),
+        modifier = modifier.verticalScroll(rememberScrollState()).padding(ContentPadding),
         verticalArrangement = Arrangement.spacedBy(SectionSpacing),
     ) {
         Text(text = state.video.title, style = MaterialTheme.typography.titleLarge)

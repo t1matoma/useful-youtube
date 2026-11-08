@@ -219,6 +219,14 @@ The player's **Save to playlist** sheet has its own `SaveToPlaylistViewModel` in
 (`save/`). `PlayerRoute` creates both ViewModels for the same back stack entry; this keeps the playback
 state apart from the sheet state.
 
+Picture-in-picture (`component/PictureInPicture.kt`) is plain UI state, like fullscreen. `MainActivity`
+declares `supportsPictureInPicture`. While the player screen is shown, `PictureInPictureEffect` keeps the
+activity's `PictureInPictureParams` up to date: 16:9, the video bounds as the source rect, auto-enter only
+while the video plays (Android 12+; older versions enter from `addOnUserLeaveHintListener`) and a play/pause
+`RemoteAction`. The action sends a package-local broadcast that the effect receives and turns into
+`PlayerController.play`/`pause`. On leaving the screen it turns auto-enter off. `PlayerScreen` reads
+`rememberIsInPictureInPictureMode()` and then shows only the video.
+
 ## Watch history
 
 `YouTubePlayer` reports `PLAYING`; `PlayerViewModel` sends the current video to `RecordWatchUseCase` once
@@ -266,7 +274,7 @@ has the same background as the Compose theme, so there is no light flash at star
 | Screen | State | Notes |
 |---|---|---|
 | Feed | sealed: `Loading`, `Empty`, `Error`, `Content` | refreshes on open, pull-to-refresh; an error over stored content is shown once in a snackbar |
-| Video | sealed: `Loading`, `NotFound`, `Content(queue)` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`); fullscreen via the player's button (`FullscreenListener` → `FullscreenPlayer`, landscape and hidden system bars while it is shown); **Add channel** for videos of other channels; playlist queue with autoplay |
+| Video | sealed: `Loading`, `NotFound`, `Content(queue)` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`); fullscreen via the player's button (`FullscreenListener` → `FullscreenPlayer`, landscape and hidden system bars while it is shown); picture-in-picture when the app is left during playback (`PictureInPictureEffect`); **Add channel** for videos of other channels; playlist queue with autoplay |
 | Channels | data class | inline error under the input, removal with confirmation |
 | Search | data class | query field, order chips, recent queries, results with **Show more**; reads the stored search |
 | History | data class | videos grouped by day (`groupByDay` with the injected `Clock` and `ZoneId`), remove, clear with confirmation |

@@ -14,4 +14,6 @@
     <string name="feature_player_previous">Previous video</string>
     <string name="feature_player_next">Next video</string>
     <string name="feature_player_queue_label">Playlist</string>
+    <string name="feature_player_play">Play</string>
+    <string name="feature_player_pause">Pause</string>
 </resources>

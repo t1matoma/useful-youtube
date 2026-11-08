@@ -143,6 +143,10 @@ Implemented as the `ShortsDetector` strategy:
 - **Fullscreen** through the player's own fullscreen button: the video covers the screen in landscape with
   the system bars hidden. The same button or Back leaves fullscreen. In a playlist, **Previous** and
   **Next** are shown on the sides while the video is paused.
+- **Picture-in-picture:** leaving the app (Home, the recent apps) while a video plays turns it into a small
+  window over other apps that keeps playing; a paused video does not. The window shows only the video and
+  has a play/pause button; expanding it returns to the video screen, closing it pauses the video.
+  Playback stops when the screen is turned off: the official player must stay visible.
 - A playlist plays in order: when a video ends, the next one starts. A bar under the actions shows
   "‹playlist› · 3 of 12" with **Previous** and **Next**. Back returns to the playlist.
 - **Save to playlist** opens a sheet with the app playlists, ticked when they contain the video, and

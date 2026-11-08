@@ -195,5 +195,8 @@ Environment:
 - The fullscreen view comes from the IFrame player (`FullscreenListener`); it is not part of the `UiState`.
   `PlayerScreen` keeps it as plain Compose state, and `FullscreenPlayer` restores the orientation and the
   system bars when it leaves the composition.
+- `YouTubePlayerView` pauses on `ON_STOP`, not `ON_PAUSE`. A picture-in-picture activity is only paused, so
+  the video keeps playing; closing the window stops the activity and pauses it. Do not try to keep playback
+  going with the screen off: the YouTube API policies require a visible player.
 - The newest Android cmdline-tools may hang while redirecting `sdkmanager` to the new Android CLI.
   cmdline-tools 19.0 works; run `sdkmanager` with stdin closed (`</dev/null`).
