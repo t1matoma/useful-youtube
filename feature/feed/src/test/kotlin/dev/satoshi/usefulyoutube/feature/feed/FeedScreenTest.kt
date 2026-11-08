@@ -2,7 +2,9 @@ package dev.satoshi.usefulyoutube.feature.feed
 
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -12,6 +14,7 @@ import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.isEqualTo
 import dev.satoshi.usefulyoutube.core.model.DataError
+import dev.satoshi.usefulyoutube.core.model.PlaybackPosition
 import dev.satoshi.usefulyoutube.core.model.VideoId
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
 import dev.satoshi.usefulyoutube.core.ui.component.LOADING_INDICATOR_TEST_TAG
@@ -19,6 +22,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import kotlin.time.Duration.Companion.minutes
 import dev.satoshi.usefulyoutube.core.ui.R as CoreUiR
 
 @RunWith(RobolectricTestRunner::class)
@@ -89,5 +93,22 @@ class FeedScreenTest {
         setContent(FeedUiState.Content(listOf(video), isRefreshing = false, refreshError = DataError.QuotaExceeded))
 
         composeRule.onNodeWithText(string(CoreUiR.string.core_ui_error_quota_exceeded)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `watched video shows its progress`() {
+        val video = TestData.video(id = "abc")
+        setContent(
+            FeedUiState.Content(
+                listOf(video),
+                isRefreshing = false,
+                refreshError = null,
+                playbackPositions = mapOf(video.id to PlaybackPosition(position = 2.minutes, duration = 8.minutes)),
+            ),
+        )
+
+        composeRule
+            .onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(current = 0.25f, range = 0f..1f)))
+            .assertExists()
     }
 }

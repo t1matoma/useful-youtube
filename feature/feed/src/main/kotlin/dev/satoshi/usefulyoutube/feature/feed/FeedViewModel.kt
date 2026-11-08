@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveFeedUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaybackPositionsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.RefreshFeedUseCase
 import dev.satoshi.usefulyoutube.core.model.AppResult
 import dev.satoshi.usefulyoutube.core.model.DataError
+import dev.satoshi.usefulyoutube.core.model.PlaybackPosition
 import dev.satoshi.usefulyoutube.core.model.Video
+import dev.satoshi.usefulyoutube.core.model.VideoId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,12 +25,13 @@ class FeedViewModel
     @Inject
     constructor(
         observeFeed: ObserveFeedUseCase,
+        observePlaybackPositions: ObservePlaybackPositionsUseCase,
         private val refreshFeed: RefreshFeedUseCase,
     ) : ViewModel() {
         private val refreshState = MutableStateFlow(RefreshState())
 
         val uiState: StateFlow<FeedUiState> =
-            combine(observeFeed(), refreshState, ::toUiState)
+            combine(observeFeed(), refreshState, observePlaybackPositions(), ::toUiState)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), FeedUiState.Loading)
 
         init {
@@ -53,9 +57,10 @@ class FeedViewModel
         private fun toUiState(
             videos: List<Video>,
             refresh: RefreshState,
+            positions: Map<VideoId, PlaybackPosition>,
         ): FeedUiState =
             when {
-                videos.isNotEmpty() -> FeedUiState.Content(videos, refresh.isRefreshing, refresh.error)
+                videos.isNotEmpty() -> FeedUiState.Content(videos, refresh.isRefreshing, refresh.error, positions)
                 refresh.error != null -> FeedUiState.Error(refresh.error, refresh.isRefreshing)
                 else -> FeedUiState.Empty(refresh.isRefreshing)
             }

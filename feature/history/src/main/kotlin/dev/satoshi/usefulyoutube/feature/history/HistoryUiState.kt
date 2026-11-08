@@ -1,6 +1,8 @@
 package dev.satoshi.usefulyoutube.feature.history
 
+import dev.satoshi.usefulyoutube.core.model.PlaybackPosition
 import dev.satoshi.usefulyoutube.core.model.Video
+import dev.satoshi.usefulyoutube.core.model.VideoId
 import java.time.LocalDate
 
 data class HistoryUiState(
@@ -8,6 +10,8 @@ data class HistoryUiState(
     /** Most recent day first; videos of a day are most recently watched first. */
     val days: List<HistoryDay> = emptyList(),
     val isClearDialogVisible: Boolean = false,
+    /** Where watched videos stopped, for their progress bars. */
+    val playbackPositions: Map<VideoId, PlaybackPosition> = emptyMap(),
 )
 
 data class HistoryDay(

@@ -13,6 +13,7 @@ import dev.satoshi.usefulyoutube.core.domain.shorts.DurationShortsDetector
 import dev.satoshi.usefulyoutube.core.domain.usecase.ClassifyVideoUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.DeleteRecentSearchQueryUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.LoadMoreSearchResultsUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaybackPositionsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveRecentSearchQueriesUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveSearchResultsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.SearchVideosUseCase
@@ -22,6 +23,7 @@ import dev.satoshi.usefulyoutube.core.model.VideoContentKind
 import dev.satoshi.usefulyoutube.core.testing.MainDispatcherRule
 import dev.satoshi.usefulyoutube.core.testing.collectInBackground
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
+import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeSearchRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,6 +45,7 @@ class SearchViewModelTest {
         return SearchViewModel(
             observeSearchResults = ObserveSearchResultsUseCase(repository),
             observeRecentQueries = ObserveRecentSearchQueriesUseCase(repository),
+            observePlaybackPositions = ObservePlaybackPositionsUseCase(FakeHistoryRepository()),
             searchVideos = SearchVideosUseCase(repository, classifyVideo),
             loadMoreResults = LoadMoreSearchResultsUseCase(repository, classifyVideo),
             deleteRecentQuery = DeleteRecentSearchQueryUseCase(repository),

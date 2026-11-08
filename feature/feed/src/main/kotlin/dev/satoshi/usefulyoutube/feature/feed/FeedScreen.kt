@@ -139,7 +139,11 @@ private fun FeedContent(
         is FeedUiState.Content -> {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(state.videos, key = { it.id.value }) { video ->
-                    VideoCard(video = video, onClick = { onVideoClick(video.id) })
+                    VideoCard(
+                        video = video,
+                        onClick = { onVideoClick(video.id) },
+                        progress = state.playbackPositions[video.id]?.progress,
+                    )
                 }
             }
         }

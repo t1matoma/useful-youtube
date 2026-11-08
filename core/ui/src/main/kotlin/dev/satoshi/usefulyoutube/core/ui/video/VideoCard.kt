@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.progressSemantics
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +37,7 @@ import kotlin.time.Clock
 private const val THUMBNAIL_ASPECT_RATIO = 16f / 9f
 private const val BADGE_BACKGROUND_ALPHA = 0.85f
 private const val TITLE_MAX_LINES = 2
+private const val PROGRESS_TRACK_ALPHA = 0.35f
 private val CardBottomPadding = 20.dp
 private val TextPadding = 16.dp
 private val TextTopPadding = 12.dp
@@ -45,13 +48,18 @@ private val BadgeVerticalPadding = 3.dp
 private val LiveDotSize = 6.dp
 private val LiveDotSpacing = 6.dp
 private val ThumbnailCornerRadius = 10.dp
+private val ProgressBarHeight = 3.dp
 
-/** A video with an edge-to-edge thumbnail, the title and "channel · date" below it. */
+/**
+ * A video with an edge-to-edge thumbnail, the title and "channel · date" below it. [progress] is the watched part
+ * of the video, from 0 to 1, shown as a bar under the thumbnail; `null` for a video that was not watched.
+ */
 @Composable
 fun VideoCard(
     video: Video,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    progress: Float? = null,
     /** An optional action next to the title, for example removing the video from a playlist. */
     action: (@Composable () -> Unit)? = null,
 ) {
@@ -66,6 +74,9 @@ fun VideoCard(
                         text = formatDuration(duration),
                         modifier = Modifier.align(Alignment.BottomEnd).padding(BadgeMargin),
                     )
+                }
+                progress?.takeIf { it > 0f }?.let {
+                    WatchedProgressBar(progress = it, modifier = Modifier.align(Alignment.BottomStart))
                 }
             }
         }
@@ -118,6 +129,29 @@ fun relativeDate(video: Video): String =
             Clock.System.now().toEpochMilliseconds(),
             DateUtils.MINUTE_IN_MILLIS,
         ).toString()
+
+@Composable
+private fun WatchedProgressBar(
+    progress: Float,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(ProgressBarHeight)
+                .progressSemantics(progress)
+                .background(Color.White.copy(alpha = PROGRESS_TRACK_ALPHA)),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth(progress)
+                    .height(ProgressBarHeight)
+                    .background(MaterialTheme.colorScheme.primary),
+        )
+    }
+}
 
 @Composable
 private fun DurationBadge(

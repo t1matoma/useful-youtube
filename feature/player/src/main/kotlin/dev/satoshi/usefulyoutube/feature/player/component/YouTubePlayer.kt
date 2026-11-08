@@ -14,35 +14,68 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.Abs
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.FullscreenListener
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.options.IFramePlayerOptions
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
+import dev.satoshi.usefulyoutube.core.model.PlaybackPosition
 import dev.satoshi.usefulyoutube.core.model.VideoId
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 private const val SHOW_CONTROLS = 1
 private const val SHOW_FULLSCREEN_BUTTON = 1
 private const val RELATED_VIDEOS_FROM_SAME_CHANNEL_ONLY = 0
 private const val HIDE_ANNOTATIONS = 3
-private const val START_SECONDS = 0f
 
 /**
  * Loads a video once the player is ready and every time the video id changes afterwards; plays and pauses it
- * from outside the player, for example from the picture-in-picture window.
+ * from outside the player, for example from the picture-in-picture window. Tells where the loaded video is.
  */
 internal class PlayerController {
     private var player: YouTubePlayer? = null
     private var loadedVideoId: String? = null
 
+    /** Until the loaded video plays, the player may still report the time of the previous one. */
+    private var isLoadedVideoStarted = false
+    private var loadedVideoDurationSeconds = 0f
+
     fun onReady(
         readyPlayer: YouTubePlayer,
         videoId: String,
+        start: Duration,
     ) {
         player = readyPlayer
-        load(videoId)
+        load(videoId, start)
     }
 
-    fun load(videoId: String) {
+    /** [start] is used only when another video is loaded. */
+    fun load(
+        videoId: String,
+        start: Duration,
+    ) {
         val readyPlayer = player ?: return
         if (videoId == loadedVideoId) return
         loadedVideoId = videoId
-        readyPlayer.loadVideo(videoId, START_SECONDS)
+        isLoadedVideoStarted = false
+        loadedVideoDurationSeconds = 0f
+        readyPlayer.loadVideo(videoId, start.toDouble(DurationUnit.SECONDS).toFloat())
+    }
+
+    fun onStateChange(state: PlayerConstants.PlayerState) {
+        if (state == PlayerConstants.PlayerState.PLAYING) isLoadedVideoStarted = true
+    }
+
+    fun onVideoDuration(seconds: Float) {
+        loadedVideoDurationSeconds = seconds
+    }
+
+    /** `null` until the loaded video plays and while its duration is unknown, for example for a live stream. */
+    fun positionAt(second: Float): Pair<VideoId, PlaybackPosition>? {
+        val videoId = loadedVideoId ?: return null
+        if (!isLoadedVideoStarted || loadedVideoDurationSeconds <= 0f) return null
+        return VideoId(videoId) to
+            PlaybackPosition(
+                position = second.toDouble().toDuration(DurationUnit.SECONDS),
+                duration = loadedVideoDurationSeconds.toDouble().toDuration(DurationUnit.SECONDS),
+            )
     }
 
     fun play() {
@@ -64,13 +97,16 @@ internal class FullscreenVideo(
 )
 
 /**
- * Official YouTube IFrame player that plays [videoId] and reports when playback starts and ends, whether it is
- * playing, and when its own fullscreen button is used.
+ * Official YouTube IFrame player that plays [videoId] from [startPosition] and reports when playback starts,
+ * progresses, pauses and ends, whether it is playing, and when its own fullscreen button is used.
  */
 @Composable
 internal fun YouTubePlayer(
     videoId: VideoId,
+    startPosition: Duration,
     onPlaybackStarted: () -> Unit,
+    onProgress: (VideoId, PlaybackPosition) -> Unit,
+    onPaused: () -> Unit,
     onVideoEnded: () -> Unit,
     onPlayingChange: (Boolean) -> Unit,
     onEnterFullscreen: (FullscreenVideo) -> Unit,
@@ -80,7 +116,10 @@ internal fun YouTubePlayer(
 ) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val currentVideoId by rememberUpdatedState(videoId)
+    val currentStartPosition by rememberUpdatedState(startPosition)
     val currentOnPlaybackStarted by rememberUpdatedState(onPlaybackStarted)
+    val currentOnProgress by rememberUpdatedState(onProgress)
+    val currentOnPaused by rememberUpdatedState(onPaused)
     val currentOnVideoEnded by rememberUpdatedState(onVideoEnded)
     val currentOnPlayingChange by rememberUpdatedState(onPlayingChange)
     val currentOnEnterFullscreen by rememberUpdatedState(onEnterFullscreen)
@@ -116,17 +155,36 @@ internal fun YouTubePlayer(
                 initialize(
                     object : AbstractYouTubePlayerListener() {
                         override fun onReady(youTubePlayer: YouTubePlayer) {
-                            controller.onReady(youTubePlayer, currentVideoId.value)
+                            controller.onReady(youTubePlayer, currentVideoId.value, currentStartPosition)
+                        }
+
+                        override fun onVideoDuration(
+                            youTubePlayer: YouTubePlayer,
+                            duration: Float,
+                        ) {
+                            controller.onVideoDuration(duration)
+                        }
+
+                        override fun onCurrentSecond(
+                            youTubePlayer: YouTubePlayer,
+                            second: Float,
+                        ) {
+                            controller.positionAt(second)?.let { (id, position) -> currentOnProgress(id, position) }
                         }
 
                         override fun onStateChange(
                             youTubePlayer: YouTubePlayer,
                             state: PlayerConstants.PlayerState,
                         ) {
+                            controller.onStateChange(state)
                             currentOnPlayingChange(state == PlayerConstants.PlayerState.PLAYING)
                             when (state) {
                                 PlayerConstants.PlayerState.PLAYING -> {
                                     currentOnPlaybackStarted()
+                                }
+
+                                PlayerConstants.PlayerState.PAUSED -> {
+                                    currentOnPaused()
                                 }
 
                                 PlayerConstants.PlayerState.ENDED -> {
@@ -141,7 +199,7 @@ internal fun YouTubePlayer(
                 )
             }
         },
-        update = { controller.load(videoId.value) },
+        update = { controller.load(videoId.value, startPosition) },
         onRelease = { playerView ->
             lifecycle.removeObserver(playerView)
             playerView.release()

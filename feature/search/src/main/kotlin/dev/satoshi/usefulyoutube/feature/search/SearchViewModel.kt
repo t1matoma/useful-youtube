@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.satoshi.usefulyoutube.core.domain.usecase.DeleteRecentSearchQueryUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.LoadMoreSearchResultsUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaybackPositionsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveRecentSearchQueriesUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveSearchResultsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.SearchVideosUseCase
@@ -26,6 +27,7 @@ class SearchViewModel
     constructor(
         observeSearchResults: ObserveSearchResultsUseCase,
         observeRecentQueries: ObserveRecentSearchQueriesUseCase,
+        observePlaybackPositions: ObservePlaybackPositionsUseCase,
         private val searchVideos: SearchVideosUseCase,
         private val loadMoreResults: LoadMoreSearchResultsUseCase,
         private val deleteRecentQuery: DeleteRecentSearchQueryUseCase,
@@ -43,7 +45,12 @@ class SearchViewModel
         private val editorState = MutableStateFlow(EditorState())
 
         val uiState: StateFlow<SearchUiState> =
-            combine(observeSearchResults(), observeRecentQueries(), editorState) { results, recentQueries, editor ->
+            combine(
+                observeSearchResults(),
+                observeRecentQueries(),
+                editorState,
+                observePlaybackPositions(),
+            ) { results, recentQueries, editor, positions ->
                 SearchUiState(
                     query = editor.query ?: results?.query.orEmpty(),
                     order = editor.order ?: results?.order ?: SearchOrder.RELEVANCE,
@@ -53,6 +60,7 @@ class SearchViewModel
                     searchError = editor.searchError,
                     isLoadingMore = editor.isLoadingMore,
                     loadMoreError = editor.loadMoreError,
+                    playbackPositions = positions,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), SearchUiState())
 

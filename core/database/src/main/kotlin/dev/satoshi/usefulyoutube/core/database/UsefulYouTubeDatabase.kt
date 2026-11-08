@@ -32,9 +32,11 @@ import dev.satoshi.usefulyoutube.core.database.entity.WatchHistoryEntity
         PlaylistItemEntity::class,
         WatchHistoryEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
     autoMigrations = [
+        // Version 5 adds the playback position to the watch history.
+        AutoMigration(from = 4, to = 5),
         // Version 2 adds the search tables.
         AutoMigration(from = 1, to = 2),
         // Version 3 adds the playlist tables.

@@ -8,28 +8,34 @@ import dev.satoshi.usefulyoutube.core.domain.usecase.AddChannelUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveChannelsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaylistUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveVideoUseCase
-import dev.satoshi.usefulyoutube.core.domain.usecase.RecordWatchUseCase
 import dev.satoshi.usefulyoutube.core.model.AppResult
 import dev.satoshi.usefulyoutube.core.model.ChannelError
 import dev.satoshi.usefulyoutube.core.model.PlaylistId
 import dev.satoshi.usefulyoutube.core.model.PlaylistWithVideos
+import dev.satoshi.usefulyoutube.core.model.Video
 import dev.satoshi.usefulyoutube.core.model.VideoId
 import dev.satoshi.usefulyoutube.feature.player.navigation.PlayerDestination
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.time.Duration
 
 /**
  * Plays one video or, with a playlist id, a playlist: the current video changes inside the screen, so
- * "back" returns to the playlist. The current video is kept in the saved state.
+ * "back" returns to the playlist. The current video is kept in the saved state. A video continues where it
+ * stopped last time.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -37,11 +43,11 @@ class PlayerViewModel
     @Inject
     constructor(
         private val savedStateHandle: SavedStateHandle,
-        observeVideo: ObserveVideoUseCase,
+        private val observeVideo: ObserveVideoUseCase,
         observeChannels: ObserveChannelsUseCase,
         observePlaylist: ObservePlaylistUseCase,
         private val addChannel: AddChannelUseCase,
-        private val recordWatch: RecordWatchUseCase,
+        private val playbackTracker: PlaybackTracker,
     ) : ViewModel() {
         private data class ScreenState(
             val isDescriptionExpanded: Boolean = false,
@@ -65,21 +71,19 @@ class PlayerViewModel
             ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
         private val screenState = MutableStateFlow(ScreenState())
 
-        /** Pausing and resuming does not move the video to the top of the history again. */
-        private var recordedVideoId: VideoId? = null
-
         val uiState: StateFlow<PlayerUiState> =
             combine(
-                currentVideoId.flatMapLatest { observeVideo(VideoId(it)) },
+                currentVideoId.flatMapLatest { id -> observeVideoWithStart(VideoId(id)) },
                 observeChannels(),
                 playlist,
                 screenState,
-            ) { video, channels, playlist, screen ->
+            ) { (video, startPosition), channels, playlist, screen ->
                 if (video == null) {
                     PlayerUiState.NotFound
                 } else {
                     PlayerUiState.Content(
                         video = video,
+                        startPosition = startPosition,
                         isDescriptionExpanded = screen.isDescriptionExpanded,
                         isChannelSubscribed = channels.any { it.id == video.channelId },
                         isSubscribing = screen.isSubscribing,
@@ -100,14 +104,30 @@ class PlayerViewModel
                 }
 
                 PlayerUiEvent.PlaybackStarted -> {
-                    recordPlayback()
+                    currentVideo()?.let { video -> viewModelScope.launch { playbackTracker.onStarted(video) } }
+                }
+
+                is PlayerUiEvent.PlaybackProgressed -> {
+                    val video = currentVideo()?.takeIf { it.id == event.videoId } ?: return
+                    viewModelScope.launch { playbackTracker.onProgress(video, event.position) }
+                }
+
+                PlayerUiEvent.PlaybackStopped -> {
+                    viewModelScope.launch { playbackTracker.onStopped() }
                 }
 
                 PlayerUiEvent.PreviousClicked -> {
+                    viewModelScope.launch { playbackTracker.onStopped() }
                     moveBy(-1)
                 }
 
-                PlayerUiEvent.NextClicked, PlayerUiEvent.VideoEnded -> {
+                PlayerUiEvent.NextClicked -> {
+                    viewModelScope.launch { playbackTracker.onStopped() }
+                    moveBy(1)
+                }
+
+                PlayerUiEvent.VideoEnded -> {
+                    viewModelScope.launch { playbackTracker.onEnded() }
                     moveBy(1)
                 }
             }
@@ -122,12 +142,14 @@ class PlayerViewModel
             savedStateHandle[CURRENT_VIDEO_KEY] = next.value
         }
 
-        private fun recordPlayback() {
-            val video = (uiState.value as? PlayerUiState.Content)?.video ?: return
-            if (video.id == recordedVideoId) return
-            recordedVideoId = video.id
-            viewModelScope.launch { recordWatch(video) }
-        }
+        /** The start position is read once, so saving the position while the video plays does not reload it. */
+        private fun observeVideoWithStart(id: VideoId): Flow<Pair<Video?, Duration>> =
+            flow {
+                val startPosition = playbackTracker.startPosition(id)
+                emitAll(observeVideo(id).map { video -> video to startPosition })
+            }
+
+        private fun currentVideo() = (uiState.value as? PlayerUiState.Content)?.video
 
         /** The channel id is verified through its RSS feed, which costs no Data API quota. */
         private fun subscribe() {

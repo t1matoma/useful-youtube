@@ -81,7 +81,7 @@ fun HistoryScreen(
             }
 
             else -> {
-                HistoryList(state.days, onEvent, onVideoClick, contentModifier)
+                HistoryList(state, onEvent, onVideoClick, contentModifier)
             }
         }
     }
@@ -105,14 +105,14 @@ fun HistoryScreen(
 
 @Composable
 private fun HistoryList(
-    days: List<HistoryDay>,
+    state: HistoryUiState,
     onEvent: (HistoryUiEvent) -> Unit,
     onVideoClick: (VideoId) -> Unit,
     modifier: Modifier,
 ) {
     val dateFormatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG) }
     LazyColumn(modifier = modifier) {
-        days.forEach { day ->
+        state.days.forEach { day ->
             item(key = "day-${day.day}") {
                 Text(
                     text = day.day.text(dateFormatter),
@@ -125,6 +125,7 @@ private fun HistoryList(
                 VideoCard(
                     video = video,
                     onClick = { onVideoClick(video.id) },
+                    progress = state.playbackPositions[video.id]?.progress,
                     action = {
                         IconButton(onClick = { onEvent(HistoryUiEvent.VideoRemoved(video.id)) }) {
                             Icon(

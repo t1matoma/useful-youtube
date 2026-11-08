@@ -161,6 +161,7 @@ private fun PlaylistVideos(
             VideoCard(
                 video = video,
                 onClick = { onPlay(video.id, playlistId) },
+                progress = state.playbackPositions[video.id]?.progress,
                 action =
                     if (isEditable) {
                         {

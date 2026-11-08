@@ -73,4 +73,20 @@ class WatchHistoryDaoTest : DatabaseTest() {
             historyDao.clear()
             assertThat(historyDao.observeHistory().first()).isEmpty()
         }
+
+    @Test
+    fun `playback position is saved and kept when the video is watched again`() =
+        runTest {
+            historyDao.record(entry("a", watchedAt = 1), limit = 10)
+
+            historyDao.savePlaybackPosition("a", positionSeconds = 120, durationSeconds = 600)
+            historyDao.savePlaybackPosition("missing", positionSeconds = 30, durationSeconds = 60)
+            historyDao.record(entry("a", watchedAt = 2), limit = 10)
+
+            val saved = historyDao.getEntry("a")
+            assertThat(saved?.watchedAtEpochMillis).isEqualTo(2L)
+            assertThat(saved?.playbackPositionSeconds).isEqualTo(120L)
+            assertThat(saved?.playbackDurationSeconds).isEqualTo(600L)
+            assertThat(historyDao.getEntry("missing")).isNull()
+        }
 }

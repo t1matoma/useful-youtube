@@ -27,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -139,10 +140,15 @@ fun PlayerScreen(
                 }
 
                 is PlayerUiState.Content -> {
+                    // Leaving the screen saves where the video stopped.
+                    DisposableEffect(Unit) { onDispose { onEvent(PlayerUiEvent.PlaybackStopped) } }
                     Column(modifier = contentModifier, verticalArrangement = Arrangement.Center) {
                         YouTubePlayer(
                             videoId = state.video.id,
+                            startPosition = state.startPosition,
                             onPlaybackStarted = { onEvent(PlayerUiEvent.PlaybackStarted) },
+                            onProgress = { id, position -> onEvent(PlayerUiEvent.PlaybackProgressed(id, position)) },
+                            onPaused = { onEvent(PlayerUiEvent.PlaybackStopped) },
                             onVideoEnded = { onEvent(PlayerUiEvent.VideoEnded) },
                             onPlayingChange = { isPlaying = it },
                             onEnterFullscreen = { fullscreenVideo = it },

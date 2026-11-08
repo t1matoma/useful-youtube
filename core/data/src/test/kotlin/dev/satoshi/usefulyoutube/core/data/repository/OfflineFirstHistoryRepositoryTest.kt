@@ -2,10 +2,12 @@ package dev.satoshi.usefulyoutube.core.data.repository
 
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.containsOnly
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import dev.satoshi.usefulyoutube.core.model.ChannelId
+import dev.satoshi.usefulyoutube.core.model.PlaybackPosition
 import dev.satoshi.usefulyoutube.core.model.Video
 import dev.satoshi.usefulyoutube.core.model.VideoContentKind
 import dev.satoshi.usefulyoutube.core.model.VideoId
@@ -15,6 +17,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 class OfflineFirstHistoryRepositoryTest : RepositoryTest() {
@@ -67,5 +70,21 @@ class OfflineFirstHistoryRepositoryTest : RepositoryTest() {
 
             repository.clear()
             assertThat(repository.observeHistory().first()).isEmpty()
+        }
+
+    @Test
+    fun `playback positions are saved for watched videos only`() =
+        runTest(testDispatcher) {
+            repository.recordWatched(video("a"))
+            repository.recordWatched(video("b"))
+            val position = PlaybackPosition(position = 90.seconds, duration = 10.minutes)
+
+            repository.savePlaybackPosition(VideoId("a"), position)
+            repository.savePlaybackPosition(VideoId("missing"), position)
+
+            assertThat(repository.getPlaybackPosition(VideoId("a"))).isEqualTo(position)
+            assertThat(repository.getPlaybackPosition(VideoId("b"))).isNull()
+            assertThat(repository.getPlaybackPosition(VideoId("missing"))).isNull()
+            assertThat(repository.observePlaybackPositions().first()).containsOnly(VideoId("a") to position)
         }
 }

@@ -6,13 +6,16 @@ import dev.satoshi.usefulyoutube.core.domain.repository.VideoRepository
 import dev.satoshi.usefulyoutube.core.domain.shorts.DurationShortsDetector
 import dev.satoshi.usefulyoutube.core.domain.usecase.ClassifyVideoUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveFeedUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaybackPositionsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.RefreshFeedUseCase
 import dev.satoshi.usefulyoutube.core.model.DataError
+import dev.satoshi.usefulyoutube.core.model.PlaybackPosition
 import dev.satoshi.usefulyoutube.core.model.VideoContentKind
 import dev.satoshi.usefulyoutube.core.testing.MainDispatcherRule
 import dev.satoshi.usefulyoutube.core.testing.collectInBackground
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeChannelRepository
+import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeVideoRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -31,10 +34,14 @@ class FeedViewModelTest {
     private val channelRepository = FakeChannelRepository(listOf(TestData.firstChannel))
     private val videoRepository = FakeVideoRepository()
 
-    private fun TestScope.createViewModel(repository: VideoRepository = videoRepository): FeedViewModel {
+    private fun TestScope.createViewModel(
+        repository: VideoRepository = videoRepository,
+        historyRepository: FakeHistoryRepository = FakeHistoryRepository(),
+    ): FeedViewModel {
         val viewModel =
             FeedViewModel(
                 observeFeed = ObserveFeedUseCase(repository),
+                observePlaybackPositions = ObservePlaybackPositionsUseCase(historyRepository),
                 refreshFeed =
                     RefreshFeedUseCase(channelRepository, repository, ClassifyVideoUseCase(DurationShortsDetector())),
             )
@@ -107,5 +114,21 @@ class FeedViewModelTest {
             assertThat(viewModel.uiState.value).isEqualTo(
                 FeedUiState.Content(listOf(stored), isRefreshing = false, refreshError = null),
             )
+        }
+
+    @Test
+    fun `content shows where watched videos stopped`() =
+        runTest {
+            val watched = TestData.video(id = "watched")
+            val watchedPosition = PlaybackPosition(position = 1.minutes, duration = 10.minutes)
+            val viewModel =
+                createViewModel(
+                    FakeVideoRepository(listOf(watched)),
+                    FakeHistoryRepository(initialPositions = mapOf(watched.id to watchedPosition)),
+                )
+            advanceUntilIdle()
+
+            val content = viewModel.uiState.value as FeedUiState.Content
+            assertThat(content.playbackPositions).isEqualTo(mapOf(watched.id to watchedPosition))
         }
 }

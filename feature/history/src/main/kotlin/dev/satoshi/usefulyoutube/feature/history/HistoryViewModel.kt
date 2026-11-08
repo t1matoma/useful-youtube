@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.satoshi.usefulyoutube.core.domain.usecase.ClearHistoryUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaybackPositionsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveWatchHistoryUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.RemoveFromHistoryUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,7 @@ class HistoryViewModel
     @Inject
     constructor(
         observeWatchHistory: ObserveWatchHistoryUseCase,
+        observePlaybackPositions: ObservePlaybackPositionsUseCase,
         private val removeFromHistory: RemoveFromHistoryUseCase,
         private val clearHistory: ClearHistoryUseCase,
         private val clock: Clock,
@@ -29,11 +31,16 @@ class HistoryViewModel
         private val isClearDialogVisible = MutableStateFlow(false)
 
         val uiState: StateFlow<HistoryUiState> =
-            combine(observeWatchHistory(), isClearDialogVisible) { history, dialogVisible ->
+            combine(
+                observeWatchHistory(),
+                observePlaybackPositions(),
+                isClearDialogVisible,
+            ) { history, positions, dialogVisible ->
                 HistoryUiState(
                     isLoading = false,
                     days = groupByDay(history, clock.now(), zone),
                     isClearDialogVisible = dialogVisible,
+                    playbackPositions = positions,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), HistoryUiState())
 

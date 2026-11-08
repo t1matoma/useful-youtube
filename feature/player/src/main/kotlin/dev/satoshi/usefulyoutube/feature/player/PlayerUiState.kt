@@ -2,6 +2,7 @@ package dev.satoshi.usefulyoutube.feature.player
 
 import dev.satoshi.usefulyoutube.core.model.ChannelError
 import dev.satoshi.usefulyoutube.core.model.Video
+import kotlin.time.Duration
 
 sealed interface PlayerUiState {
     data object Loading : PlayerUiState
@@ -10,6 +11,8 @@ sealed interface PlayerUiState {
 
     data class Content(
         val video: Video,
+        /** Where the player starts the video: where it stopped last time, or the beginning. */
+        val startPosition: Duration = Duration.ZERO,
         val isDescriptionExpanded: Boolean,
         /** `false` for videos opened from the search, whose channel can be added to the subscriptions. */
         val isChannelSubscribed: Boolean,

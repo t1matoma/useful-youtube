@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.satoshi.usefulyoutube.core.domain.usecase.DeletePlaylistUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaybackPositionsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaylistUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.RenamePlaylistUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.SetVideoInPlaylistUseCase
@@ -26,6 +27,7 @@ class PlaylistViewModel
     constructor(
         savedStateHandle: SavedStateHandle,
         observePlaylist: ObservePlaylistUseCase,
+        observePlaybackPositions: ObservePlaybackPositionsUseCase,
         private val renamePlaylist: RenamePlaylistUseCase,
         private val deletePlaylist: DeletePlaylistUseCase,
         private val setVideoInPlaylist: SetVideoInPlaylistUseCase,
@@ -35,8 +37,12 @@ class PlaylistViewModel
         private val dialogState = MutableStateFlow<PlaylistDialog?>(null)
 
         val uiState: StateFlow<PlaylistUiState> =
-            combine(observePlaylist(playlistId), dialogState) { playlist, dialog ->
-                if (playlist == null) PlaylistUiState.NotFound else PlaylistUiState.Content(playlist, dialog)
+            combine(
+                observePlaylist(playlistId),
+                dialogState,
+                observePlaybackPositions(),
+            ) { playlist, dialog, positions ->
+                if (playlist == null) PlaylistUiState.NotFound else PlaylistUiState.Content(playlist, dialog, positions)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), PlaylistUiState.Loading)
 
         fun onEvent(event: PlaylistUiEvent) {

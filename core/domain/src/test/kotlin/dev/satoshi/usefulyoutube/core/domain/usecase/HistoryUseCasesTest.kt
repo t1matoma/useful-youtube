@@ -3,8 +3,10 @@ package dev.satoshi.usefulyoutube.core.domain.usecase
 import app.cash.turbine.test
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.containsOnly
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import dev.satoshi.usefulyoutube.core.model.PlaybackPosition
 import dev.satoshi.usefulyoutube.core.model.VideoId
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
@@ -14,6 +16,9 @@ import dev.satoshi.usefulyoutube.core.testing.repository.FakeVideoRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 class HistoryUseCasesTest {
     private val repository = FakeHistoryRepository()
@@ -47,4 +52,42 @@ class HistoryUseCasesTest {
 
             assertThat(observeVideo(VideoId("watched")).first()).isEqualTo(watched)
         }
+
+    @Test
+    fun `saved playback position is observed and removed with the video`() =
+        runTest {
+            val position = PlaybackPosition(position = 2.minutes, duration = 10.minutes)
+            RecordWatchUseCase(repository)(TestData.video("a"))
+
+            SavePlaybackPositionUseCase(repository)(VideoId("a"), position)
+            assertThat(ObservePlaybackPositionsUseCase(repository)().first()).containsOnly(VideoId("a") to position)
+
+            RemoveFromHistoryUseCase(repository)(VideoId("a"))
+            assertThat(ObservePlaybackPositionsUseCase(repository)().first()).isEmpty()
+        }
+
+    @Test
+    fun `playback resumes where it stopped unless watched briefly or to the end`() =
+        runTest {
+            val getResumePosition = GetResumePositionUseCase(repository)
+            val save = SavePlaybackPositionUseCase(repository)
+            RecordWatchUseCase(repository)(TestData.video("a"))
+
+            assertThat(getResumePosition(VideoId("a"))).isEqualTo(Duration.ZERO)
+            save(VideoId("a"), PlaybackPosition(position = 2.minutes, duration = 10.minutes))
+            assertThat(getResumePosition(VideoId("a"))).isEqualTo(2.minutes)
+            save(VideoId("a"), PlaybackPosition(position = 4.seconds, duration = 10.minutes))
+            assertThat(getResumePosition(VideoId("a"))).isEqualTo(Duration.ZERO)
+            save(VideoId("a"), PlaybackPosition(position = 10.minutes - 9.seconds, duration = 10.minutes))
+            assertThat(getResumePosition(VideoId("a"))).isEqualTo(Duration.ZERO)
+            save(VideoId("a"), PlaybackPosition(position = 10.minutes - 10.seconds, duration = 10.minutes))
+            assertThat(getResumePosition(VideoId("a"))).isEqualTo(10.minutes - 10.seconds)
+        }
+
+    @Test
+    fun `progress is the watched part of the video`() {
+        assertThat(PlaybackPosition(position = 2.minutes, duration = 8.minutes).progress).isEqualTo(0.25f)
+        assertThat(PlaybackPosition(position = 9.minutes, duration = 8.minutes).progress).isEqualTo(1f)
+        assertThat(PlaybackPosition(position = 2.minutes, duration = Duration.ZERO).progress).isEqualTo(0f)
+    }
 }

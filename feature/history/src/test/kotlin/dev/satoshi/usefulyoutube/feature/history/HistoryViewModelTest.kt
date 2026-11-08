@@ -7,8 +7,10 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isTrue
 import dev.satoshi.usefulyoutube.core.domain.usecase.ClearHistoryUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaybackPositionsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveWatchHistoryUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.RemoveFromHistoryUseCase
+import dev.satoshi.usefulyoutube.core.model.PlaybackPosition
 import dev.satoshi.usefulyoutube.core.model.WatchedVideo
 import dev.satoshi.usefulyoutube.core.testing.MainDispatcherRule
 import dev.satoshi.usefulyoutube.core.testing.collectInBackground
@@ -21,6 +23,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.time.ZoneOffset
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -34,12 +37,14 @@ class HistoryViewModelTest {
                 WatchedVideo(TestData.video("b"), Instant.parse("2026-11-07T09:00:00Z")),
                 WatchedVideo(TestData.video("a"), Instant.parse("2026-11-06T09:00:00Z")),
             ),
+            initialPositions = mapOf(TestData.video("a").id to PlaybackPosition(2.minutes, 10.minutes)),
         )
 
     // Created after MainDispatcherRule has replaced the main dispatcher, which viewModelScope captures.
     private val viewModel by lazy {
         HistoryViewModel(
             observeWatchHistory = ObserveWatchHistoryUseCase(repository),
+            observePlaybackPositions = ObservePlaybackPositionsUseCase(repository),
             removeFromHistory = RemoveFromHistoryUseCase(repository),
             clearHistory = ClearHistoryUseCase(repository),
             clock =
@@ -59,6 +64,7 @@ class HistoryViewModelTest {
             val state = viewModel.uiState.value
             assertThat(state.isLoading).isFalse()
             assertThat(state.days.map { it.day }).containsExactly(HistoryDayLabel.Today, HistoryDayLabel.Yesterday)
+            assertThat(state.playbackPositions[TestData.video("a").id]?.progress).isEqualTo(0.2f)
         }
 
     @Test

@@ -5,6 +5,7 @@ import dev.satoshi.usefulyoutube.core.data.mapper.toVideo
 import dev.satoshi.usefulyoutube.core.database.dao.WatchHistoryDao
 import dev.satoshi.usefulyoutube.core.database.entity.WatchHistoryEntity
 import dev.satoshi.usefulyoutube.core.domain.repository.HistoryRepository
+import dev.satoshi.usefulyoutube.core.model.PlaybackPosition
 import dev.satoshi.usefulyoutube.core.model.Video
 import dev.satoshi.usefulyoutube.core.model.VideoId
 import dev.satoshi.usefulyoutube.core.model.WatchedVideo
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 internal class OfflineFirstHistoryRepository
@@ -34,9 +36,36 @@ internal class OfflineFirstHistoryRepository
                 limit = MAXIMUM_HISTORY_SIZE,
             )
 
+        override fun observePlaybackPositions(): Flow<Map<VideoId, PlaybackPosition>> =
+            historyDao.observeHistory().map { entries ->
+                entries
+                    .mapNotNull { entry -> entry.playbackPosition()?.let { VideoId(entry.video.videoId) to it } }
+                    .toMap()
+            }
+
+        override suspend fun getPlaybackPosition(id: VideoId): PlaybackPosition? =
+            historyDao.getEntry(id.value)?.playbackPosition()
+
+        override suspend fun savePlaybackPosition(
+            id: VideoId,
+            position: PlaybackPosition,
+        ) = historyDao.savePlaybackPosition(
+            id.value,
+            positionSeconds = position.position.inWholeSeconds,
+            durationSeconds = position.duration.inWholeSeconds,
+        )
+
         override suspend fun remove(id: VideoId) = historyDao.delete(id.value)
 
         override suspend fun clear() = historyDao.clear()
+
+        /** `null` until a position is saved. */
+        private fun WatchHistoryEntity.playbackPosition(): PlaybackPosition? =
+            if (playbackPositionSeconds > 0 && playbackDurationSeconds > 0) {
+                PlaybackPosition(playbackPositionSeconds.seconds, playbackDurationSeconds.seconds)
+            } else {
+                null
+            }
 
         private companion object {
             const val MAXIMUM_HISTORY_SIZE = 500

@@ -121,6 +121,8 @@ Implemented as the `ShortsDetector` strategy:
   pausing and resuming does not record it again. Every video of a played playlist is recorded.
 - Each video appears once; watching it again moves it to the top with the new time. Only the 500 most
   recently watched videos are kept.
+- The history also keeps where each video stopped (see **Video screen**). Removing a video from the history or
+  clearing it forgets the position.
 - The history keeps a copy of the video's data, so its videos play even if they left the feed, the search
   and the playlists.
 - The **History** tab groups videos by the local day they were watched (**Today**, **Yesterday**, then the
@@ -131,6 +133,8 @@ Implemented as the `ShortsDetector` strategy:
 
 - All regular videos and live streams/premieres of all subscriptions, newest first.
 - Each item: an edge-to-edge thumbnail, duration or a live badge, title, channel, relative publication date.
+  A watched video shows a progress bar under its thumbnail with the watched part; the feed, the search, the
+  playlists and the history show it the same way.
 - Pull-to-refresh; loading, empty (with a shortcut to import), and error (with retry) states.
 - A refresh error over stored videos is shown once in a snackbar.
 
@@ -140,6 +144,10 @@ Implemented as the `ShortsDetector` strategy:
   with `rel=0`, so related videos at the end come from the same channel only.
 - Title, channel, relative publication date, and a selectable description that can be expanded and collapsed.
 - Playback survives screen rotation.
+- **Continue watching:** a video starts where it stopped last time, also after the app was closed and inside a
+  playlist. The position is saved every 5 seconds while the video plays and when it is paused, skipped or
+  left. A video watched less than 5 seconds or to less than 10 seconds before the end starts from the
+  beginning; a finished video shows a full progress bar. Live streams have no position.
 - **Fullscreen** through the player's own fullscreen button: the video covers the screen in landscape with
   the system bars hidden. The same button or Back leaves fullscreen. In a playlist, **Previous** and
   **Next** are shown on the sides while the video is paused.

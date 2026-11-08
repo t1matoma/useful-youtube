@@ -156,9 +156,9 @@ Google API errors from the response body (`errors[].reason`, `details[].reason`)
 
 ## Database
 
-Room, schema version 4, exported to `core/database/schemas/`. Version 2 added the search tables,
-version 3 the playlist tables and version 4 the watch history, all with `@AutoMigration`; `MigrationTest`
-checks them against the exported schemas.
+Room, schema version 5, exported to `core/database/schemas/`. Version 2 added the search tables,
+version 3 the playlist tables, version 4 the watch history and version 5 its playback position, all with
+`@AutoMigration`; `MigrationTest` checks them against the exported schemas.
 
 | Table | Columns |
 |---|---|
@@ -168,7 +168,7 @@ checks them against the exported schemas.
 | `search_session` | one row: `query_text`, `sort_order`, `next_page_token` (`NULL` when there are no more pages) |
 | `recent_search_queries` | `query_text` (PK), `used_order` (larger is more recent; at most 10 rows) |
 | `playlists` | `id` (PK, autoincrement), `title`, `remote_id` (unique; YouTube playlist id, `NULL` for app playlists), `synced_at` |
-| `watch_history` | `video_id` (PK), `watched_at`, and the `VideoSnapshot` columns; at most 500 rows |
+| `watch_history` | `video_id` (PK), `watched_at`, `playback_position_seconds`, `playback_duration_seconds` (both `0` until saved), and the `VideoSnapshot` columns; at most 500 rows |
 | `playlist_items` | `playlist_id` (FK → playlists, `ON DELETE CASCADE`), `video_id`, `position`, and the `VideoSnapshot` columns; PK (`playlist_id`, `video_id`) |
 
 Indices: `videos.channel_id`, `videos.published_at`, `search_results.position`, unique
@@ -229,9 +229,25 @@ while the video plays (Android 12+; older versions enter from `addOnUserLeaveHin
 
 ## Watch history
 
-`YouTubePlayer` reports `PLAYING`; `PlayerViewModel` sends the current video to `RecordWatchUseCase` once
-per video. `HistoryRepository` stores it with the injected `Clock` and `WatchHistoryDao.record` trims the
-table to 500 rows in the same transaction. `ObserveVideoUseCase` also looks into the history.
+`YouTubePlayer` reports `PLAYING`; `PlayerViewModel` hands the events to its `PlaybackTracker`, which sends
+the current video to `RecordWatchUseCase` once per video. `HistoryRepository` stores it with the injected
+`Clock` and `WatchHistoryDao.record` trims the table to 500 rows in the same transaction; a video recorded
+again keeps its playback position. `ObserveVideoUseCase` also looks into the history.
+
+**Playback position.** The position lives in the history entry, so removing a video or clearing the history
+removes it too.
+
+- `PlayerController` reports the time of the loaded video (`onCurrentSecond`, every 100 ms) with its duration
+  only after the video plays: until then the player may still report the previous video. Live streams report
+  no duration and are skipped.
+- `PlaybackTracker` saves the position through `SavePlaybackPositionUseCase` every 5 s of playback, on pause,
+  on previous/next, when the screen is left (`DisposableEffect`) and, as the full duration, at the end. A
+  `Mutex` keeps the writes in order, so the history entry exists before its position is saved.
+- `GetResumePositionUseCase` holds the rule for the start: the saved position, or `0` when less than 5 s was
+  watched or less than 10 s is left. `PlayerViewModel` reads it once per video into `Content.startPosition`, so
+  saving the position does not reload the video.
+- The list screens combine `ObservePlaybackPositionsUseCase` into their state and pass
+  `PlaybackPosition.progress` to `VideoCard`, which draws a bar under the thumbnail.
 
 ## Channels and import
 

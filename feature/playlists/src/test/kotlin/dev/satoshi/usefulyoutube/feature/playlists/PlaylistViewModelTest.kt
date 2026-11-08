@@ -6,6 +6,7 @@ import assertk.assertions.containsExactly
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import dev.satoshi.usefulyoutube.core.domain.usecase.DeletePlaylistUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaybackPositionsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaylistUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.RenamePlaylistUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.SetVideoInPlaylistUseCase
@@ -14,6 +15,7 @@ import dev.satoshi.usefulyoutube.core.model.PlaylistSource
 import dev.satoshi.usefulyoutube.core.testing.MainDispatcherRule
 import dev.satoshi.usefulyoutube.core.testing.collectInBackground
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
+import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakePlaylistRepository
 import dev.satoshi.usefulyoutube.feature.playlists.navigation.PlaylistDestination
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -33,6 +35,7 @@ class PlaylistViewModelTest {
         PlaylistViewModel(
             savedStateHandle = SavedStateHandle(mapOf(PlaylistDestination.PLAYLIST_ID_ARGUMENT to id.value)),
             observePlaylist = ObservePlaylistUseCase(repository),
+            observePlaybackPositions = ObservePlaybackPositionsUseCase(FakeHistoryRepository()),
             renamePlaylist = RenamePlaylistUseCase(repository),
             deletePlaylist = DeletePlaylistUseCase(repository),
             setVideoInPlaylist = SetVideoInPlaylistUseCase(repository),
