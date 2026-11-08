@@ -1,18 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Themed icon: the rings and the core, with the play mark cut out of the core.
+     Drawn on the 512 canvas of the source SVG; the group maps its 512 units onto the visible 72dp of the
+     108dp adaptive icon (scale 72/512, offset 18dp), so the outer ring stays inside the 66dp safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:pathData="M33,41H53M33,54H53M33,67H45"
-        android:strokeWidth="6"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeLineCap="round" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M62,40L80,54L62,68Z"
-        android:strokeWidth="6"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeLineJoin="round" />
+    <group
+        android:scaleX="0.140625"
+        android:scaleY="0.140625"
+        android:translateX="18"
+        android:translateY="18">
+        <path
+            android:pathData="M256,92a164,164 0,1 1,0 328a164,164 0,1 1,0 -328Z"
+            android:strokeWidth="28"
+            android:strokeColor="#FFFFFFFF" />
+        <path
+            android:pathData="M256,150a106,106 0,1 1,0 212a106,106 0,1 1,0 -212Z"
+            android:strokeAlpha="0.5"
+            android:strokeWidth="28"
+            android:strokeColor="#FFFFFFFF" />
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M256,198a58,58 0,1 1,0 116a58,58 0,1 1,0 -116ZM237,220L237,292L293,256Z" />
+    </group>
 </vector>

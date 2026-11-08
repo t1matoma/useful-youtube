@@ -1,6 +1,7 @@
 package dev.satoshi.usefulyoutube.feature.feed
 
 import assertk.assertThat
+import assertk.assertions.containsExactly
 import assertk.assertions.isEqualTo
 import dev.satoshi.usefulyoutube.core.domain.repository.VideoRepository
 import dev.satoshi.usefulyoutube.core.domain.shorts.DurationShortsDetector
@@ -25,6 +26,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedViewModelTest {
@@ -130,5 +132,50 @@ class FeedViewModelTest {
 
             val content = viewModel.uiState.value as FeedUiState.Content
             assertThat(content.playbackPositions).isEqualTo(mapOf(watched.id to watchedPosition))
+        }
+
+    @Test
+    fun `videos watched to the end leave the feed`() =
+        runTest {
+            val finished = TestData.video(id = "finished")
+            val started = TestData.video(id = "started")
+            val historyRepository = FakeHistoryRepository()
+            val viewModel = createViewModel(FakeVideoRepository(listOf(finished, started)), historyRepository)
+            advanceUntilIdle()
+
+            historyRepository.recordWatched(finished)
+            historyRepository.recordWatched(started)
+            historyRepository.savePlaybackPosition(
+                finished.id,
+                PlaybackPosition(position = 10.minutes - 5.seconds, duration = 10.minutes),
+            )
+            historyRepository.savePlaybackPosition(
+                started.id,
+                PlaybackPosition(position = 1.minutes, duration = 10.minutes),
+            )
+            advanceUntilIdle()
+
+            val content = viewModel.uiState.value as FeedUiState.Content
+            assertThat(content.videos).containsExactly(started)
+        }
+
+    @Test
+    fun `feed of only finished videos is all watched state`() =
+        runTest {
+            val finished = TestData.video(id = "finished")
+            val repository = FakeVideoRepository(listOf(finished)).apply { detailsError = DataError.QuotaExceeded }
+            val viewModel =
+                createViewModel(
+                    repository,
+                    FakeHistoryRepository(
+                        initialPositions =
+                            mapOf(finished.id to PlaybackPosition(position = 10.minutes, duration = 10.minutes)),
+                    ),
+                )
+            advanceUntilIdle()
+
+            assertThat(viewModel.uiState.value).isEqualTo(
+                FeedUiState.AllWatched(isRefreshing = false, refreshError = DataError.QuotaExceeded),
+            )
         }
 }

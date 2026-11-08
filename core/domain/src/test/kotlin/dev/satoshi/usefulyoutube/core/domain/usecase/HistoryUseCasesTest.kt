@@ -6,6 +6,8 @@ import assertk.assertions.containsExactly
 import assertk.assertions.containsOnly
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
+import assertk.assertions.isTrue
 import dev.satoshi.usefulyoutube.core.model.PlaybackPosition
 import dev.satoshi.usefulyoutube.core.model.VideoId
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
@@ -89,5 +91,13 @@ class HistoryUseCasesTest {
         assertThat(PlaybackPosition(position = 2.minutes, duration = 8.minutes).progress).isEqualTo(0.25f)
         assertThat(PlaybackPosition(position = 9.minutes, duration = 8.minutes).progress).isEqualTo(1f)
         assertThat(PlaybackPosition(position = 2.minutes, duration = Duration.ZERO).progress).isEqualTo(0f)
+    }
+
+    @Test
+    fun `video is finished when less than the end margin is left`() {
+        assertThat(PlaybackPosition(position = 10.minutes - 9.seconds, duration = 10.minutes).isFinished).isTrue()
+        assertThat(PlaybackPosition(position = 10.minutes, duration = 10.minutes).isFinished).isTrue()
+        assertThat(PlaybackPosition(position = 10.minutes - 10.seconds, duration = 10.minutes).isFinished).isFalse()
+        assertThat(PlaybackPosition(position = 2.minutes, duration = Duration.ZERO).isFinished).isFalse()
     }
 }

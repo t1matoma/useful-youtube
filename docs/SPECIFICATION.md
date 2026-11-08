@@ -132,6 +132,9 @@ Implemented as the `ShortsDetector` strategy:
 ### Feed screen
 
 - All regular videos and live streams/premieres of all subscriptions, newest first.
+- A video watched to less than 10 seconds before its end leaves the feed: it stays in the **History** tab, the
+  search and the playlists. Removing it from the history (or clearing the history) brings it back. When every
+  stored video is watched, the feed says so instead of offering the import.
 - Each item: an edge-to-edge thumbnail, duration or a live badge, title, channel, relative publication date.
   A watched video shows a progress bar under its thumbnail with the watched part; the feed, the search, the
   playlists and the history show it the same way.

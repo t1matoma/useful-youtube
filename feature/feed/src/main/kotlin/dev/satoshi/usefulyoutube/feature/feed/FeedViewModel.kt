@@ -58,12 +58,15 @@ class FeedViewModel
             videos: List<Video>,
             refresh: RefreshState,
             positions: Map<VideoId, PlaybackPosition>,
-        ): FeedUiState =
-            when {
-                videos.isNotEmpty() -> FeedUiState.Content(videos, refresh.isRefreshing, refresh.error, positions)
+        ): FeedUiState {
+            val unwatched = videos.filterNot { positions[it.id]?.isFinished == true }
+            return when {
+                unwatched.isNotEmpty() -> FeedUiState.Content(unwatched, refresh.isRefreshing, refresh.error, positions)
+                videos.isNotEmpty() -> FeedUiState.AllWatched(refresh.isRefreshing, refresh.error)
                 refresh.error != null -> FeedUiState.Error(refresh.error, refresh.isRefreshing)
                 else -> FeedUiState.Empty(refresh.isRefreshing)
             }
+        }
 
         private data class RefreshState(
             val isRefreshing: Boolean = false,

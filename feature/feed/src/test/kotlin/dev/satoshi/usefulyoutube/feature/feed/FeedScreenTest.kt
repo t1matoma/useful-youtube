@@ -96,6 +96,21 @@ class FeedScreenTest {
     }
 
     @Test
+    fun `all watched state says so without offering import`() {
+        setContent(FeedUiState.AllWatched(isRefreshing = false, refreshError = null))
+
+        composeRule.onNodeWithText(string(R.string.feature_feed_all_watched)).assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.feature_feed_import)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `refresh error over all watched videos is shown in snackbar`() {
+        setContent(FeedUiState.AllWatched(isRefreshing = false, refreshError = DataError.QuotaExceeded))
+
+        composeRule.onNodeWithText(string(CoreUiR.string.core_ui_error_quota_exceeded)).assertIsDisplayed()
+    }
+
+    @Test
     fun `watched video shows its progress`() {
         val video = TestData.video(id = "abc")
         setContent(

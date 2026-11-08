@@ -243,11 +243,15 @@ removes it too.
 - `PlaybackTracker` saves the position through `SavePlaybackPositionUseCase` every 5 s of playback, on pause,
   on previous/next, when the screen is left (`DisposableEffect`) and, as the full duration, at the end. A
   `Mutex` keeps the writes in order, so the history entry exists before its position is saved.
+- `PlaybackPosition.isFinished` (`:core:model`) is the single rule for a video watched to the end: less than
+  `END_MARGIN` (10 s) is left of a known duration.
 - `GetResumePositionUseCase` holds the rule for the start: the saved position, or `0` when less than 5 s was
-  watched or less than 10 s is left. `PlayerViewModel` reads it once per video into `Content.startPosition`, so
+  watched or the video `isFinished`. `PlayerViewModel` reads it once per video into `Content.startPosition`, so
   saving the position does not reload the video.
 - The list screens combine `ObservePlaybackPositionsUseCase` into their state and pass
   `PlaybackPosition.progress` to `VideoCard`, which draws a bar under the thumbnail.
+- `FeedViewModel` also drops finished videos from the feed. When stored videos exist but all are finished,
+  the state is `FeedUiState.AllWatched` instead of `Empty`, which offers the import.
 
 ## Channels and import
 

@@ -3,5 +3,8 @@
     <!-- Keep in sync with core/ui/.../theme/Color.kt. -->
     <color name="app_background">#FF0E0E10</color>
     <color name="app_accent">#FFFF5A4E</color>
-    <color name="app_on_background_muted">#FFC9C9CF</color>
+    <!-- Launcher icon only. -->
+    <color name="launcher_background">#FF17181C</color>
+    <color name="launcher_accent">#FFF26B3A</color>
+    <color name="launcher_play">#FFFFFFFF</color>
 </resources>

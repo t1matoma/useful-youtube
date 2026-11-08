@@ -18,6 +18,14 @@ sealed interface FeedUiState {
         val isRefreshing: Boolean,
     ) : FeedUiState
 
+    /** Every stored video was watched to the end, so none is left to show. */
+    data class AllWatched(
+        val isRefreshing: Boolean,
+        /** Error of the last refresh, shown once. */
+        val refreshError: DataError?,
+    ) : FeedUiState
+
+    /** The videos that were not watched to the end. */
     data class Content(
         val videos: List<Video>,
         val isRefreshing: Boolean,

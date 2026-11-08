@@ -63,7 +63,7 @@ fun FeedScreen(
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    val refreshErrorMessage = (state as? FeedUiState.Content)?.refreshError?.message()
+    val refreshErrorMessage = state.refreshError?.message()
     LaunchedEffect(refreshErrorMessage) {
         if (refreshErrorMessage != null) {
             snackbarHostState.showSnackbar(refreshErrorMessage)
@@ -113,7 +113,7 @@ private fun FeedContent(
     onVideoClick: (VideoId) -> Unit,
     onImportSubscriptions: () -> Unit,
 ) {
-    // Empty and error states scroll so that pull-to-refresh works on them too.
+    // Message states scroll so that pull-to-refresh works on them too.
     val scrollableModifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
     when (state) {
         FeedUiState.Loading -> {}
@@ -123,6 +123,13 @@ private fun FeedContent(
                 message = stringResource(R.string.feature_feed_empty),
                 actionLabel = stringResource(R.string.feature_feed_import),
                 onAction = onImportSubscriptions,
+                modifier = scrollableModifier,
+            )
+        }
+
+        is FeedUiState.AllWatched -> {
+            MessageContent(
+                message = stringResource(R.string.feature_feed_all_watched),
                 modifier = scrollableModifier,
             )
         }
@@ -156,7 +163,17 @@ private val FeedUiState.isRefreshing: Boolean
             FeedUiState.Loading -> true
             is FeedUiState.Empty -> isRefreshing
             is FeedUiState.Error -> isRefreshing
+            is FeedUiState.AllWatched -> isRefreshing
             is FeedUiState.Content -> isRefreshing
+        }
+
+/** Error of the last refresh over stored videos, shown once in a snackbar. */
+private val FeedUiState.refreshError: DataError?
+    get() =
+        when (this) {
+            is FeedUiState.AllWatched -> refreshError
+            is FeedUiState.Content -> refreshError
+            FeedUiState.Loading, is FeedUiState.Empty, is FeedUiState.Error -> null
         }
 
 @Preview
