@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_settings_title">Settings</string>
+    <string name="feature_settings_back">Back</string>
+    <string name="feature_settings_recommendations">Recommendations</string>
+    <string name="feature_settings_recommendations_description">Show the For you tab. Videos are picked on this device from your watch history and likes: unwatched videos of your subscriptions and of channels that your favorite authors feature.</string>
+</resources>

@@ -5,4 +5,5 @@
     <string name="feature_feed_all_watched">Вы посмотрели все новые видео.</string>
     <string name="feature_feed_import">Импортировать подписки</string>
     <string name="feature_feed_channels">Каналы</string>
+    <string name="feature_feed_settings">Настройки</string>
 </resources>

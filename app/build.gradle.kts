@@ -32,10 +32,13 @@ dependencies {
     implementation(projects.feature.search)
     implementation(projects.feature.playlists)
     implementation(projects.feature.history)
+    implementation(projects.feature.settings)
+    implementation(projects.feature.recommendations)
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.hilt.work)
     implementation(libs.androidx.work.runtime.ktx)

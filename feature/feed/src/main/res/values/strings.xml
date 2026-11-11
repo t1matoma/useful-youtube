@@ -5,4 +5,5 @@
     <string name="feature_feed_all_watched">You have watched all new videos.</string>
     <string name="feature_feed_import">Import subscriptions</string>
     <string name="feature_feed_channels">Channels</string>
+    <string name="feature_feed_settings">Settings</string>
 </resources>

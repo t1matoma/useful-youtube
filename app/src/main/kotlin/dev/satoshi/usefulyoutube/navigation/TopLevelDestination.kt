@@ -6,11 +6,13 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.vector.ImageVector
 import dev.satoshi.usefulyoutube.R
 import dev.satoshi.usefulyoutube.feature.feed.navigation.FeedDestination
 import dev.satoshi.usefulyoutube.feature.history.navigation.HistoryDestination
 import dev.satoshi.usefulyoutube.feature.playlists.navigation.PlaylistsDestination
+import dev.satoshi.usefulyoutube.feature.recommendations.navigation.RecommendationsDestination
 import dev.satoshi.usefulyoutube.feature.search.navigation.SearchDestination
 import kotlin.reflect.KClass
 
@@ -22,6 +24,12 @@ enum class TopLevelDestination(
     @param:StringRes val label: Int,
 ) {
     FEED(FeedDestination, FeedDestination::class, Icons.Default.Home, R.string.app_tab_feed),
+    RECOMMENDATIONS(
+        RecommendationsDestination,
+        RecommendationsDestination::class,
+        Icons.Default.Star,
+        R.string.app_tab_recommendations,
+    ),
     SEARCH(SearchDestination, SearchDestination::class, Icons.Default.Search, R.string.app_tab_search),
     PLAYLISTS(
         PlaylistsDestination,

@@ -12,12 +12,14 @@ data object FeedDestination
 fun NavGraphBuilder.feedScreen(
     onVideoClick: (VideoId) -> Unit,
     onOpenChannels: () -> Unit,
+    onOpenSettings: () -> Unit,
     onImportSubscriptions: () -> Unit,
 ) {
     composable<FeedDestination> {
         FeedRoute(
             onVideoClick = onVideoClick,
             onOpenChannels = onOpenChannels,
+            onOpenSettings = onOpenSettings,
             onImportSubscriptions = onImportSubscriptions,
         )
     }

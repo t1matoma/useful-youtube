@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_recommendations_title">For you</string>
+    <string name="feature_recommendations_empty">Nothing to recommend yet. Watch and like videos: recommendations are picked from your history and likes.</string>
+</resources>

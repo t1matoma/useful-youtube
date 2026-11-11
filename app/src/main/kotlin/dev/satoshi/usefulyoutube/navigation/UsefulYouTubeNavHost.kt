@@ -41,23 +41,32 @@ import dev.satoshi.usefulyoutube.feature.player.navigation.playerScreen
 import dev.satoshi.usefulyoutube.feature.playlists.navigation.navigateToPlaylist
 import dev.satoshi.usefulyoutube.feature.playlists.navigation.playlistScreen
 import dev.satoshi.usefulyoutube.feature.playlists.navigation.playlistsScreen
+import dev.satoshi.usefulyoutube.feature.recommendations.navigation.recommendationsScreen
 import dev.satoshi.usefulyoutube.feature.search.navigation.searchScreen
+import dev.satoshi.usefulyoutube.feature.settings.navigation.navigateToSettings
+import dev.satoshi.usefulyoutube.feature.settings.navigation.settingsScreen
 import dev.satoshi.usefulyoutube.feature.subscriptionimport.navigation.importScreen
 import dev.satoshi.usefulyoutube.feature.subscriptionimport.navigation.navigateToImport
 
 private val TabDotSize = 4.dp
 private val TabDotSpacing = 4.dp
 
+/** Without [recommendationsEnabled] the "For you" tab is not offered. */
 @Composable
-fun UsefulYouTubeNavHost(modifier: Modifier = Modifier) {
+fun UsefulYouTubeNavHost(
+    recommendationsEnabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val navController = rememberNavController()
     val currentDestination = navController.currentBackStackEntryAsState().value?.destination
     val currentTab = TopLevelDestination.entries.firstOrNull { currentDestination.isIn(it) }
+    val tabs =
+        TopLevelDestination.entries.filter { it != TopLevelDestination.RECOMMENDATIONS || recommendationsEnabled }
     Scaffold(
         modifier = modifier,
         bottomBar = {
             if (currentTab != null) {
-                BottomBar(currentTab = currentTab, onTabClick = navController::navigateToTab)
+                BottomBar(tabs = tabs, currentTab = currentTab, onTabClick = navController::navigateToTab)
             }
         },
     ) { innerPadding ->
@@ -70,8 +79,10 @@ fun UsefulYouTubeNavHost(modifier: Modifier = Modifier) {
             feedScreen(
                 onVideoClick = navController::navigateToPlayer,
                 onOpenChannels = navController::navigateToChannels,
+                onOpenSettings = navController::navigateToSettings,
                 onImportSubscriptions = navController::navigateToImport,
             )
+            recommendationsScreen(onVideoClick = navController::navigateToPlayer)
             searchScreen(onVideoClick = navController::navigateToPlayer)
             playlistsScreen(onPlaylistClick = navController::navigateToPlaylist)
             historyScreen(onVideoClick = navController::navigateToPlayer)
@@ -80,6 +91,7 @@ fun UsefulYouTubeNavHost(modifier: Modifier = Modifier) {
                 onPlay = navController::navigateToPlayer,
             )
             playerScreen(onNavigateBack = navController::popBackStack)
+            settingsScreen(onNavigateBack = navController::popBackStack)
             channelsScreen(
                 onNavigateBack = navController::popBackStack,
                 onImportSubscriptions = navController::navigateToImport,
@@ -94,6 +106,7 @@ fun UsefulYouTubeNavHost(modifier: Modifier = Modifier) {
 
 @Composable
 private fun BottomBar(
+    tabs: List<TopLevelDestination>,
     currentTab: TopLevelDestination,
     onTabClick: (TopLevelDestination) -> Unit,
 ) {
@@ -109,7 +122,7 @@ private fun BottomBar(
     Column {
         HorizontalDivider(color = colors.outlineVariant)
         NavigationBar(containerColor = colors.surfaceContainerLow) {
-            TopLevelDestination.entries.forEach { tab ->
+            tabs.forEach { tab ->
                 val selected = tab == currentTab
                 NavigationBarItem(
                     selected = selected,

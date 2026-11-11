@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">Useful YouTube</string>
     <string name="app_tab_feed">Feed</string>
+    <string name="app_tab_recommendations">For you</string>
     <string name="app_tab_search">Search</string>
     <string name="app_tab_playlists">Playlists</string>
     <string name="app_tab_history">History</string>

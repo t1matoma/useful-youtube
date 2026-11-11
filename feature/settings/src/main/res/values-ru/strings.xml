@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_settings_title">Настройки</string>
+    <string name="feature_settings_back">Назад</string>
+    <string name="feature_settings_recommendations">Рекомендации</string>
+    <string name="feature_settings_recommendations_description">Показывать вкладку «Для вас». Видео подбираются на этом устройстве по истории просмотра и лайкам: непросмотренные видео из подписок и с каналов, которые рекомендуют ваши любимые авторы.</string>
+</resources>

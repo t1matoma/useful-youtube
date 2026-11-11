@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +40,7 @@ import dev.satoshi.usefulyoutube.core.ui.R as CoreUiR
 fun FeedRoute(
     onVideoClick: (VideoId) -> Unit,
     onOpenChannels: () -> Unit,
+    onOpenSettings: () -> Unit,
     onImportSubscriptions: () -> Unit,
     viewModel: FeedViewModel = hiltViewModel(),
 ) {
@@ -48,6 +50,7 @@ fun FeedRoute(
         onEvent = viewModel::onEvent,
         onVideoClick = onVideoClick,
         onOpenChannels = onOpenChannels,
+        onOpenSettings = onOpenSettings,
         onImportSubscriptions = onImportSubscriptions,
     )
 }
@@ -59,6 +62,7 @@ fun FeedScreen(
     onEvent: (FeedUiEvent) -> Unit,
     onVideoClick: (VideoId) -> Unit,
     onOpenChannels: () -> Unit,
+    onOpenSettings: () -> Unit,
     onImportSubscriptions: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -81,6 +85,12 @@ fun FeedScreen(
                         Icon(
                             Icons.Default.Person,
                             contentDescription = stringResource(R.string.feature_feed_channels),
+                        )
+                    }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.feature_feed_settings),
                         )
                     }
                 },
@@ -185,6 +195,7 @@ private fun FeedScreenErrorPreview() {
             onEvent = {},
             onVideoClick = {},
             onOpenChannels = {},
+            onOpenSettings = {},
             onImportSubscriptions = {},
         )
     }

@@ -6,6 +6,7 @@ import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -33,6 +34,7 @@ class FeedScreenTest {
     private val events = mutableListOf<FeedUiEvent>()
     private val clickedVideos = mutableListOf<VideoId>()
     private var importClicks = 0
+    private var settingsClicks = 0
 
     private fun string(
         @StringRes id: Int,
@@ -45,6 +47,7 @@ class FeedScreenTest {
                 onEvent = { events += it },
                 onVideoClick = { clickedVideos += it },
                 onOpenChannels = {},
+                onOpenSettings = { settingsClicks++ },
                 onImportSubscriptions = { importClicks++ },
             )
         }
@@ -125,5 +128,14 @@ class FeedScreenTest {
         composeRule
             .onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(current = 0.25f, range = 0f..1f)))
             .assertExists()
+    }
+
+    @Test
+    fun `settings open from the top bar`() {
+        setContent(FeedUiState.Empty(isRefreshing = false))
+
+        composeRule.onNodeWithContentDescription(string(R.string.feature_feed_settings)).performClick()
+
+        assertThat(settingsClicks).isEqualTo(1)
     }
 }
