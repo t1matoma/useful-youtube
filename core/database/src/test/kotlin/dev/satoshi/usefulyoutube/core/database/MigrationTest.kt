@@ -22,7 +22,7 @@ class MigrationTest {
     val helper = MigrationTestHelper(InstrumentationRegistry.getInstrumentation(), UsefulYouTubeDatabase::class.java)
 
     @Test
-    fun `migration from 1 to 5 keeps subscriptions and videos`() =
+    fun `migration from 1 to the latest version keeps subscriptions and videos`() =
         runTest {
             helper.createDatabase(DATABASE_NAME, 1).use { database ->
                 database.execSQL("INSERT INTO channels (id, title) VALUES ('UCaaaaaaaaaaaaaaaaaaaaaa', 'First')")
@@ -35,7 +35,7 @@ class MigrationTest {
                 )
             }
 
-            helper.runMigrationsAndValidate(DATABASE_NAME, 5, true).close()
+            helper.runMigrationsAndValidate(DATABASE_NAME, LATEST_VERSION, true).close()
 
             val database =
                 Room
@@ -60,7 +60,7 @@ class MigrationTest {
         }
 
     @Test
-    fun `migration from 2 to 5 keeps search results`() =
+    fun `migration from 2 to the latest version keeps search results`() =
         runTest {
             helper.createDatabase(DATABASE_NAME, 2).use { database ->
                 database.execSQL(
@@ -68,7 +68,7 @@ class MigrationTest {
                 )
             }
 
-            helper.runMigrationsAndValidate(DATABASE_NAME, 5, true).close()
+            helper.runMigrationsAndValidate(DATABASE_NAME, LATEST_VERSION, true).close()
 
             val database =
                 Room
@@ -84,7 +84,7 @@ class MigrationTest {
         }
 
     @Test
-    fun `migration from 3 to 5 keeps playlists`() =
+    fun `migration from 3 to the latest version keeps playlists`() =
         runTest {
             helper.createDatabase(DATABASE_NAME, 3).use { database ->
                 database.execSQL(
@@ -92,7 +92,7 @@ class MigrationTest {
                 )
             }
 
-            helper.runMigrationsAndValidate(DATABASE_NAME, 5, true).close()
+            helper.runMigrationsAndValidate(DATABASE_NAME, LATEST_VERSION, true).close()
 
             val database =
                 Room
@@ -114,7 +114,7 @@ class MigrationTest {
         }
 
     @Test
-    fun `migration from 4 to 5 keeps the history without playback positions`() =
+    fun `migration from 4 to the latest version keeps the history without playback positions`() =
         runTest {
             helper.createDatabase(DATABASE_NAME, 4).use { database ->
                 database.execSQL(
@@ -126,7 +126,7 @@ class MigrationTest {
                 )
             }
 
-            helper.runMigrationsAndValidate(DATABASE_NAME, 5, true).close()
+            helper.runMigrationsAndValidate(DATABASE_NAME, LATEST_VERSION, true).close()
 
             val database =
                 Room
@@ -142,7 +142,39 @@ class MigrationTest {
             assertThat(entry?.playbackPositionSeconds).isEqualTo(0L)
         }
 
+    @Test
+    fun `migration from 5 to the latest version keeps the history and adds empty tables`() =
+        runTest {
+            helper.createDatabase(DATABASE_NAME, 5).use { database ->
+                database.execSQL(
+                    """
+                    INSERT INTO watch_history (video_id, channel_id, channel_title, title, description, published_at,
+                    duration_seconds, thumbnail_url, content_kind, watched_at, playback_position_seconds,
+                    playback_duration_seconds)
+                    VALUES ('video00001', 'UCaaaaaaaaaaaaaaaaaaaaaa', 'First', 'Title', '', 0, 600, 'url', 'REGULAR', 1,
+                    120, 600)
+                    """.trimIndent(),
+                )
+            }
+
+            helper.runMigrationsAndValidate(DATABASE_NAME, LATEST_VERSION, true).close()
+
+            val database =
+                Room
+                    .databaseBuilder(
+                        ApplicationProvider.getApplicationContext(),
+                        UsefulYouTubeDatabase::class.java,
+                        DATABASE_NAME,
+                    ).allowMainThreadQueries()
+                    .build()
+            helper.closeWhenFinished(database)
+            assertThat(database.watchHistoryDao().getEntry("video00001")?.playbackPositionSeconds).isEqualTo(120L)
+            assertThat(database.videoRatingDao().observeRatings().first()).isEmpty()
+            assertThat(database.discoveryDao().getVideoIds()).isEmpty()
+        }
+
     private companion object {
+        const val LATEST_VERSION = 6
         const val DATABASE_NAME = "migration-test.db"
     }
 }

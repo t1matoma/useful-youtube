@@ -1,0 +1,41 @@
+{
+  "kind": "youtube#channelSectionListResponse",
+  "etag": "Zm9vYmFy",
+  "items": [
+    {
+      "kind": "youtube#channelSection",
+      "id": "UCBJycsmduvYEL83R_U4JriQ.jNQXAC9IVRw",
+      "snippet": { "type": "recentuploads", "channelId": "UCBJycsmduvYEL83R_U4JriQ", "position": 0 }
+    },
+    {
+      "kind": "youtube#channelSection",
+      "id": "UCBJycsmduvYEL83R_U4JriQ.LeAltgu_pbM",
+      "snippet": { "type": "singleplaylist", "channelId": "UCBJycsmduvYEL83R_U4JriQ", "position": 1 },
+      "contentDetails": { "playlists": ["PLaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"] }
+    },
+    {
+      "kind": "youtube#channelSection",
+      "id": "UCBJycsmduvYEL83R_U4JriQ.Zx4DA4xg9IM",
+      "snippet": {
+        "type": "multiplechannels",
+        "channelId": "UCBJycsmduvYEL83R_U4JriQ",
+        "title": "Friends",
+        "position": 2
+      },
+      "contentDetails": {
+        "channels": ["UCG7J20LhUeLl6y_Emi7OJrA", "UC2J-0g_nxlwcD9JBK1eTleQ", "UCEcrRXW3oEYfUctetZTAWLw"]
+      }
+    },
+    {
+      "kind": "youtube#channelSection",
+      "id": "UCBJycsmduvYEL83R_U4JriQ.nGzAI5pLbMY",
+      "snippet": { "type": "multiplechannels", "channelId": "UCBJycsmduvYEL83R_U4JriQ", "position": 3 },
+      "contentDetails": { "channels": ["UC2J-0g_nxlwcD9JBK1eTleQ", "UCq8ZAAsI89IoJ-fn1gYpO3g"] }
+    },
+    {
+      "kind": "youtube#channelSection",
+      "id": "UCBJycsmduvYEL83R_U4JriQ.3QSLojMBt4E",
+      "snippet": { "type": "channelsectiontypeundefined", "channelId": "UCBJycsmduvYEL83R_U4JriQ", "position": 4 }
+    }
+  ]
+}

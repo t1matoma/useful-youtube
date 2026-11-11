@@ -18,6 +18,7 @@ import dev.satoshi.usefulyoutube.core.model.VideoId
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakePlaylistRepository
+import dev.satoshi.usefulyoutube.core.testing.repository.FakeRecommendationRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeSearchRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeVideoRepository
 import kotlinx.coroutines.test.runTest
@@ -159,6 +160,7 @@ class SearchUseCasesTest {
                     repository,
                     FakePlaylistRepository(),
                     FakeHistoryRepository(),
+                    FakeRecommendationRepository(),
                 )
 
             observeVideo(VideoId("shared")).test { assertThat(awaitItem()).isEqualTo(feedVideo) }

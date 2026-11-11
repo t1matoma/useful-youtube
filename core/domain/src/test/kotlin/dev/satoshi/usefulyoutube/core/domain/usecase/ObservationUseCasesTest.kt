@@ -12,6 +12,7 @@ import dev.satoshi.usefulyoutube.core.testing.data.TestData
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeChannelRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakePlaylistRepository
+import dev.satoshi.usefulyoutube.core.testing.repository.FakeRecommendationRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeSearchRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeVideoRepository
 import kotlinx.coroutines.test.runTest
@@ -42,6 +43,7 @@ class ObservationUseCasesTest {
                     FakeSearchRepository(),
                     FakePlaylistRepository(),
                     FakeHistoryRepository(),
+                    FakeRecommendationRepository(),
                 )
 
             observeVideo(older.id).test { assertThat(awaitItem()).isEqualTo(older) }

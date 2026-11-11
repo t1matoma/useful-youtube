@@ -7,9 +7,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.satoshi.usefulyoutube.core.domain.usecase.AddChannelUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveChannelsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaylistUseCase
-import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveVideoUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveVideoWithChaptersUseCase
 import dev.satoshi.usefulyoutube.core.model.AppResult
 import dev.satoshi.usefulyoutube.core.model.ChannelError
+import dev.satoshi.usefulyoutube.core.model.Chapter
 import dev.satoshi.usefulyoutube.core.model.PlaylistId
 import dev.satoshi.usefulyoutube.core.model.PlaylistWithVideos
 import dev.satoshi.usefulyoutube.core.model.Video
@@ -43,7 +44,7 @@ class PlayerViewModel
     @Inject
     constructor(
         private val savedStateHandle: SavedStateHandle,
-        private val observeVideo: ObserveVideoUseCase,
+        private val observeVideo: ObserveVideoWithChaptersUseCase,
         observeChannels: ObserveChannelsUseCase,
         observePlaylist: ObservePlaylistUseCase,
         private val addChannel: AddChannelUseCase,
@@ -53,6 +54,14 @@ class PlayerViewModel
             val isDescriptionExpanded: Boolean = false,
             val isSubscribing: Boolean = false,
             val subscribeError: ChannelError? = null,
+            /** `null` until the player reports a position or the user picks a chapter. */
+            val currentChapterIndex: Int? = null,
+        )
+
+        private data class LoadedVideo(
+            val video: Video?,
+            val startPosition: Duration,
+            val chapters: List<Chapter>,
         )
 
         private val currentVideoId =
@@ -77,18 +86,22 @@ class PlayerViewModel
                 observeChannels(),
                 playlist,
                 screenState,
-            ) { (video, startPosition), channels, playlist, screen ->
+            ) { loaded, channels, playlist, screen ->
+                val video = loaded.video
                 if (video == null) {
                     PlayerUiState.NotFound
                 } else {
                     PlayerUiState.Content(
                         video = video,
-                        startPosition = startPosition,
+                        startPosition = loaded.startPosition,
                         isDescriptionExpanded = screen.isDescriptionExpanded,
                         isChannelSubscribed = channels.any { it.id == video.channelId },
                         isSubscribing = screen.isSubscribing,
                         subscribeError = screen.subscribeError,
                         queue = playlist?.queueAt(video.id),
+                        chapters = loaded.chapters,
+                        currentChapterIndex =
+                            screen.currentChapterIndex ?: loaded.chapters.indexAt(loaded.startPosition),
                     )
                 }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), PlayerUiState.Loading)
@@ -108,8 +121,17 @@ class PlayerViewModel
                 }
 
                 is PlayerUiEvent.PlaybackProgressed -> {
-                    val video = currentVideo()?.takeIf { it.id == event.videoId } ?: return
-                    viewModelScope.launch { playbackTracker.onProgress(video, event.position) }
+                    val content = currentContent()?.takeIf { it.video.id == event.videoId } ?: return
+                    screenState.update {
+                        it.copy(currentChapterIndex = content.chapters.indexAt(event.position.position))
+                    }
+                    viewModelScope.launch { playbackTracker.onProgress(content.video, event.position) }
+                }
+
+                is PlayerUiEvent.ChapterSelected -> {
+                    if (event.index in currentContent()?.chapters.orEmpty().indices) {
+                        screenState.update { it.copy(currentChapterIndex = event.index) }
+                    }
                 }
 
                 PlayerUiEvent.PlaybackStopped -> {
@@ -143,13 +165,23 @@ class PlayerViewModel
         }
 
         /** The start position is read once, so saving the position while the video plays does not reload it. */
-        private fun observeVideoWithStart(id: VideoId): Flow<Pair<Video?, Duration>> =
+        private fun observeVideoWithStart(id: VideoId): Flow<LoadedVideo> =
             flow {
                 val startPosition = playbackTracker.startPosition(id)
-                emitAll(observeVideo(id).map { video -> video to startPosition })
+                emitAll(
+                    observeVideo(id).map { loaded ->
+                        LoadedVideo(loaded?.video, startPosition, loaded?.chapters.orEmpty())
+                    },
+                )
             }
 
-        private fun currentVideo() = (uiState.value as? PlayerUiState.Content)?.video
+        private fun currentContent() = uiState.value as? PlayerUiState.Content
+
+        private fun currentVideo() = currentContent()?.video
+
+        /** The chapter that contains [position]; `null` without chapters. */
+        private fun List<Chapter>.indexAt(position: Duration): Int? =
+            indexOfLast { it.start <= position }.takeIf { it >= 0 }
 
         /** The channel id is verified through its RSS feed, which costs no Data API quota. */
         private fun subscribe() {

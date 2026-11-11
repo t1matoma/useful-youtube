@@ -1,13 +1,16 @@
 package dev.satoshi.usefulyoutube.core.network.api
 
 import dev.satoshi.usefulyoutube.core.network.model.ChannelListResponseDto
+import dev.satoshi.usefulyoutube.core.network.model.ChannelSectionListResponseDto
 import dev.satoshi.usefulyoutube.core.network.model.PlaylistItemListResponseDto
 import dev.satoshi.usefulyoutube.core.network.model.PlaylistListResponseDto
 import dev.satoshi.usefulyoutube.core.network.model.SearchListResponseDto
 import dev.satoshi.usefulyoutube.core.network.model.SubscriptionListResponseDto
 import dev.satoshi.usefulyoutube.core.network.model.VideoListResponseDto
+import dev.satoshi.usefulyoutube.core.network.model.VideoRatingListResponseDto
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.POST
 import retrofit2.http.Query
 
 /**
@@ -67,6 +70,26 @@ interface YouTubeDataApi {
         @Query("part") part: String = "id",
         @Query("maxResults") maxResults: Int = MAXIMUM_RESULTS_PER_PAGE,
     ): SearchListResponseDto
+
+    @GET("videos/getRating")
+    suspend fun getVideoRating(
+        @Header("Authorization") authorization: String,
+        @Query("id") videoId: String,
+    ): VideoRatingListResponseDto
+
+    /** Costs 50 quota units; answers with an empty body. */
+    @POST("videos/rate")
+    suspend fun rateVideo(
+        @Header("Authorization") authorization: String,
+        @Query("id") videoId: String,
+        @Query("rating") rating: String,
+    )
+
+    @GET("channelSections")
+    suspend fun getChannelSections(
+        @Query("channelId") channelId: String,
+        @Query("part") part: String = "snippet,contentDetails",
+    ): ChannelSectionListResponseDto
 
     companion object {
         const val MAXIMUM_IDS_PER_REQUEST = 50

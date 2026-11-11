@@ -16,4 +16,7 @@
     <string name="feature_player_queue_label">Плейлист</string>
     <string name="feature_player_play">Воспроизвести</string>
     <string name="feature_player_pause">Пауза</string>
+    <string name="feature_player_like">Нравится</string>
+    <string name="feature_player_dislike">Не нравится</string>
+    <string name="feature_player_chapters">Главы</string>
 </resources>

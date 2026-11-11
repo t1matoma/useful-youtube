@@ -16,4 +16,7 @@
     <string name="feature_player_queue_label">Playlist</string>
     <string name="feature_player_play">Play</string>
     <string name="feature_player_pause">Pause</string>
+    <string name="feature_player_like">Like</string>
+    <string name="feature_player_dislike">Dislike</string>
+    <string name="feature_player_chapters">Chapters</string>
 </resources>

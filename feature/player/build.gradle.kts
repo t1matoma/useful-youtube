@@ -7,5 +7,6 @@ android {
 }
 
 dependencies {
+    implementation(projects.core.auth)
     implementation(libs.youtube.player)
 }

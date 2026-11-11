@@ -1,6 +1,7 @@
 package dev.satoshi.usefulyoutube.feature.player
 
 import dev.satoshi.usefulyoutube.core.model.ChannelError
+import dev.satoshi.usefulyoutube.core.model.Chapter
 import dev.satoshi.usefulyoutube.core.model.Video
 import kotlin.time.Duration
 
@@ -20,6 +21,10 @@ sealed interface PlayerUiState {
         val subscribeError: ChannelError? = null,
         /** Set when a playlist is played; `null` for a single video. */
         val queue: PlaybackQueue? = null,
+        /** Chapters the author listed in the description; empty when there are none. */
+        val chapters: List<Chapter> = emptyList(),
+        /** The chapter that is playing now; `null` without chapters. */
+        val currentChapterIndex: Int? = null,
     ) : PlayerUiState
 }
 

@@ -78,6 +78,11 @@ internal class PlayerController {
             )
     }
 
+    /** Jumps inside the loaded video, for example to a chapter. */
+    fun seekTo(position: Duration) {
+        player?.seekTo(position.toDouble(DurationUnit.SECONDS).toFloat())
+    }
+
     fun play() {
         player?.play()
     }

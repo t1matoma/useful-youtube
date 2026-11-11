@@ -13,6 +13,7 @@ import dev.satoshi.usefulyoutube.core.model.VideoId
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakePlaylistRepository
+import dev.satoshi.usefulyoutube.core.testing.repository.FakeRecommendationRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeSearchRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeVideoRepository
 import kotlinx.coroutines.flow.first
@@ -50,7 +51,13 @@ class HistoryUseCasesTest {
             val watched = TestData.video("watched")
             RecordWatchUseCase(repository)(watched)
             val observeVideo =
-                ObserveVideoUseCase(FakeVideoRepository(), FakeSearchRepository(), FakePlaylistRepository(), repository)
+                ObserveVideoUseCase(
+                    FakeVideoRepository(),
+                    FakeSearchRepository(),
+                    FakePlaylistRepository(),
+                    repository,
+                    FakeRecommendationRepository(),
+                )
 
             assertThat(observeVideo(VideoId("watched")).first()).isEqualTo(watched)
         }

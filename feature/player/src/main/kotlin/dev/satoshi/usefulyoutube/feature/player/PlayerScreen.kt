@@ -1,10 +1,15 @@
 package dev.satoshi.usefulyoutube.feature.player
 
+import android.app.Activity
 import android.graphics.Rect
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toAndroidRectF
@@ -47,6 +53,7 @@ import dev.satoshi.usefulyoutube.core.ui.component.LoadingContent
 import dev.satoshi.usefulyoutube.core.ui.component.MessageContent
 import dev.satoshi.usefulyoutube.core.ui.error.message
 import dev.satoshi.usefulyoutube.core.ui.video.relativeDate
+import dev.satoshi.usefulyoutube.feature.player.component.ChapterList
 import dev.satoshi.usefulyoutube.feature.player.component.FullscreenPlayer
 import dev.satoshi.usefulyoutube.feature.player.component.FullscreenVideo
 import dev.satoshi.usefulyoutube.feature.player.component.PictureInPictureEffect
@@ -55,10 +62,15 @@ import dev.satoshi.usefulyoutube.feature.player.component.QueueButton
 import dev.satoshi.usefulyoutube.feature.player.component.QueueControls
 import dev.satoshi.usefulyoutube.feature.player.component.YouTubePlayer
 import dev.satoshi.usefulyoutube.feature.player.component.rememberIsInPictureInPictureMode
+import dev.satoshi.usefulyoutube.feature.player.rating.RatingButtons
+import dev.satoshi.usefulyoutube.feature.player.rating.RatingUiEvent
+import dev.satoshi.usefulyoutube.feature.player.rating.RatingUiState
+import dev.satoshi.usefulyoutube.feature.player.rating.RatingViewModel
 import dev.satoshi.usefulyoutube.feature.player.save.SaveToPlaylistSheet
 import dev.satoshi.usefulyoutube.feature.player.save.SaveToPlaylistUiEvent
 import dev.satoshi.usefulyoutube.feature.player.save.SaveToPlaylistUiState
 import dev.satoshi.usefulyoutube.feature.player.save.SaveToPlaylistViewModel
+import kotlin.time.Duration
 
 private const val COLLAPSED_DESCRIPTION_LINES = 3
 private val ContentPadding = 20.dp
@@ -75,18 +87,25 @@ fun PlayerRoute(
     onNavigateBack: () -> Unit,
     viewModel: PlayerViewModel = hiltViewModel(),
     saveViewModel: SaveToPlaylistViewModel = hiltViewModel(),
+    ratingViewModel: RatingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val saveState by saveViewModel.uiState.collectAsStateWithLifecycle()
-    // The sheet saves the video that is playing now, which changes while a playlist plays.
+    val ratingState by ratingViewModel.uiState.collectAsStateWithLifecycle()
+    // The sheet and the rating belong to the video that is playing now, which changes while a playlist plays.
     (state as? PlayerUiState.Content)?.video?.id?.let { videoId ->
-        LaunchedEffect(videoId) { saveViewModel.onEvent(SaveToPlaylistUiEvent.VideoChanged(videoId)) }
+        LaunchedEffect(videoId) {
+            saveViewModel.onEvent(SaveToPlaylistUiEvent.VideoChanged(videoId))
+            ratingViewModel.onEvent(RatingUiEvent.VideoChanged(videoId))
+        }
     }
     PlayerScreen(
         state = state,
         onEvent = viewModel::onEvent,
         saveState = saveState,
         onSaveEvent = saveViewModel::onEvent,
+        ratingState = ratingState,
+        onRatingEvent = ratingViewModel::onEvent,
         onNavigateBack = onNavigateBack,
     )
 }
@@ -97,9 +116,21 @@ fun PlayerScreen(
     onEvent: (PlayerUiEvent) -> Unit,
     saveState: SaveToPlaylistUiState,
     onSaveEvent: (SaveToPlaylistUiEvent) -> Unit,
+    ratingState: RatingUiState,
+    onRatingEvent: (RatingUiEvent) -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val consentLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+            onRatingEvent(RatingUiEvent.ConsentFinished(granted = result.resultCode == Activity.RESULT_OK))
+        }
+    ratingState.consentScreen?.let { consentScreen ->
+        LaunchedEffect(consentScreen) {
+            consentLauncher.launch(IntentSenderRequest.Builder(consentScreen).build())
+            onRatingEvent(RatingUiEvent.ConsentLaunched)
+        }
+    }
     // The fullscreen view belongs to the embedded player, so it is plain UI state and not part of the UiState.
     var fullscreenVideo by remember { mutableStateOf<FullscreenVideo?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
@@ -160,7 +191,13 @@ fun PlayerScreen(
                             controller = playerController,
                         )
                         if (!isInPictureInPicture) {
-                            VideoDetails(state, onEvent, onSaveEvent, modifier = Modifier.weight(1f))
+                            VideoDetails(
+                                state = state,
+                                onEvent = onEvent,
+                                actions = { VideoActions(ratingState, onRatingEvent, onSaveEvent) },
+                                onSeek = playerController::seekTo,
+                                modifier = Modifier.weight(1f),
+                            )
                         }
                     }
                 }
@@ -190,26 +227,56 @@ fun PlayerScreen(
 private fun VideoDetails(
     state: PlayerUiState.Content,
     onEvent: (PlayerUiEvent) -> Unit,
-    onSaveEvent: (SaveToPlaylistUiEvent) -> Unit,
+    actions: @Composable () -> Unit,
+    onSeek: (Duration) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // The chapters scroll sideways to the screen edges, so the sections are padded one by one.
+    val horizontalPadding = Modifier.padding(horizontal = ContentPadding)
     Column(
-        modifier = modifier.verticalScroll(rememberScrollState()).padding(ContentPadding),
+        modifier = modifier.verticalScroll(rememberScrollState()).padding(vertical = ContentPadding),
         verticalArrangement = Arrangement.spacedBy(SectionSpacing),
     ) {
-        Text(text = state.video.title, style = MaterialTheme.typography.titleLarge)
-        ChannelRow(state, onEvent)
+        Text(text = state.video.title, style = MaterialTheme.typography.titleLarge, modifier = horizontalPadding)
+        ChannelRow(state, onEvent, modifier = horizontalPadding)
         state.subscribeError?.let { error ->
-            Text(error.message(), color = MaterialTheme.colorScheme.error)
+            Text(error.message(), color = MaterialTheme.colorScheme.error, modifier = horizontalPadding)
         }
+        Column(modifier = horizontalPadding, verticalArrangement = Arrangement.spacedBy(ItemSpacing)) { actions() }
+        state.queue?.let { queue -> QueueControls(queue, onEvent, modifier = horizontalPadding) }
+        if (state.chapters.isNotEmpty()) {
+            ChapterList(
+                chapters = state.chapters,
+                currentIndex = state.currentChapterIndex,
+                onChapterClick = { index, chapter ->
+                    onSeek(chapter.start)
+                    onEvent(PlayerUiEvent.ChapterSelected(index))
+                },
+                contentPadding = PaddingValues(horizontal = ContentPadding),
+            )
+        }
+        if (state.video.description.isNotBlank()) {
+            DescriptionCard(state, onEvent, modifier = horizontalPadding)
+        }
+    }
+}
+
+/** Like, dislike and "Save to playlist", with the reason under them when YouTube did not accept a rating. */
+@Composable
+private fun VideoActions(
+    ratingState: RatingUiState,
+    onRatingEvent: (RatingUiEvent) -> Unit,
+    onSaveEvent: (SaveToPlaylistUiEvent) -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(ItemSpacing), verticalAlignment = Alignment.CenterVertically) {
+        RatingButtons(ratingState, onRatingEvent)
         OutlinedButton(onClick = { onSaveEvent(SaveToPlaylistUiEvent.SaveClicked) }) {
             Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(ButtonIconSize))
             Text(stringResource(R.string.feature_player_save), modifier = Modifier.padding(start = ButtonIconSpacing))
         }
-        state.queue?.let { queue -> QueueControls(queue, onEvent) }
-        if (state.video.description.isNotBlank()) {
-            DescriptionCard(state, onEvent)
-        }
+    }
+    ratingState.error?.let { error ->
+        Text(error.message(), color = MaterialTheme.colorScheme.error)
     }
 }
 
@@ -217,8 +284,9 @@ private fun VideoDetails(
 private fun ChannelRow(
     state: PlayerUiState.Content,
     onEvent: (PlayerUiEvent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(ItemSpacing)) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(ItemSpacing)) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(SmallSpacing)) {
             Text(
                 text = state.video.channelTitle,
@@ -253,9 +321,14 @@ private fun ChannelRow(
 private fun DescriptionCard(
     state: PlayerUiState.Content,
     onEvent: (PlayerUiEvent) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val isExpanded = state.isDescriptionExpanded
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = MaterialTheme.shapes.medium) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = MaterialTheme.shapes.medium,
+    ) {
         Column(modifier = Modifier.padding(start = CardPadding, top = CardPadding, end = CardPadding)) {
             SelectionContainer {
                 Text(

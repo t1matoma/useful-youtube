@@ -5,20 +5,25 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import dev.satoshi.usefulyoutube.core.database.dao.ChannelDao
+import dev.satoshi.usefulyoutube.core.database.dao.DiscoveryDao
 import dev.satoshi.usefulyoutube.core.database.dao.MirroredPlaylistDao
 import dev.satoshi.usefulyoutube.core.database.dao.PlaylistDao
 import dev.satoshi.usefulyoutube.core.database.dao.PlaylistItemDao
 import dev.satoshi.usefulyoutube.core.database.dao.RecentSearchQueryDao
 import dev.satoshi.usefulyoutube.core.database.dao.SearchDao
 import dev.satoshi.usefulyoutube.core.database.dao.VideoDao
+import dev.satoshi.usefulyoutube.core.database.dao.VideoRatingDao
 import dev.satoshi.usefulyoutube.core.database.dao.WatchHistoryDao
 import dev.satoshi.usefulyoutube.core.database.entity.ChannelEntity
+import dev.satoshi.usefulyoutube.core.database.entity.DiscoveredVideoEntity
+import dev.satoshi.usefulyoutube.core.database.entity.FeaturedChannelsEntity
 import dev.satoshi.usefulyoutube.core.database.entity.PlaylistEntity
 import dev.satoshi.usefulyoutube.core.database.entity.PlaylistItemEntity
 import dev.satoshi.usefulyoutube.core.database.entity.RecentSearchQueryEntity
 import dev.satoshi.usefulyoutube.core.database.entity.SearchResultEntity
 import dev.satoshi.usefulyoutube.core.database.entity.SearchSessionEntity
 import dev.satoshi.usefulyoutube.core.database.entity.VideoEntity
+import dev.satoshi.usefulyoutube.core.database.entity.VideoRatingEntity
 import dev.satoshi.usefulyoutube.core.database.entity.WatchHistoryEntity
 
 @Database(
@@ -31,8 +36,11 @@ import dev.satoshi.usefulyoutube.core.database.entity.WatchHistoryEntity
         PlaylistEntity::class,
         PlaylistItemEntity::class,
         WatchHistoryEntity::class,
+        VideoRatingEntity::class,
+        DiscoveredVideoEntity::class,
+        FeaturedChannelsEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
     autoMigrations = [
         // Version 5 adds the playback position to the watch history.
@@ -43,6 +51,8 @@ import dev.satoshi.usefulyoutube.core.database.entity.WatchHistoryEntity
         AutoMigration(from = 2, to = 3),
         // Version 4 adds the watch history.
         AutoMigration(from = 3, to = 4),
+        // Version 6 adds the video ratings and the tables of the recommendations.
+        AutoMigration(from = 5, to = 6),
     ],
 )
 @TypeConverters(DatabaseConverters::class)
@@ -62,6 +72,10 @@ abstract class UsefulYouTubeDatabase : RoomDatabase() {
     abstract fun mirroredPlaylistDao(): MirroredPlaylistDao
 
     abstract fun watchHistoryDao(): WatchHistoryDao
+
+    abstract fun videoRatingDao(): VideoRatingDao
+
+    abstract fun discoveryDao(): DiscoveryDao
 
     companion object {
         const val NAME = "useful_youtube.db"

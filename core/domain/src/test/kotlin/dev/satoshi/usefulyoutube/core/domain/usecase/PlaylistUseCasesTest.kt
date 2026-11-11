@@ -11,6 +11,7 @@ import dev.satoshi.usefulyoutube.core.model.VideoId
 import dev.satoshi.usefulyoutube.core.testing.data.TestData
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakePlaylistRepository
+import dev.satoshi.usefulyoutube.core.testing.repository.FakeRecommendationRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeSearchRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeVideoRepository
 import kotlinx.coroutines.flow.first
@@ -78,7 +79,13 @@ class PlaylistUseCasesTest {
             val saved = TestData.video("saved")
             repository.givenPlaylist("From YouTube", PlaylistSource.YOUTUBE, listOf(saved))
             val observeVideo =
-                ObserveVideoUseCase(FakeVideoRepository(), FakeSearchRepository(), repository, FakeHistoryRepository())
+                ObserveVideoUseCase(
+                    FakeVideoRepository(),
+                    FakeSearchRepository(),
+                    repository,
+                    FakeHistoryRepository(),
+                    FakeRecommendationRepository(),
+                )
 
             assertThat(observeVideo(VideoId("saved")).first()).isEqualTo(saved)
             assertThat(observeVideo(VideoId("missing")).first()).isNull()

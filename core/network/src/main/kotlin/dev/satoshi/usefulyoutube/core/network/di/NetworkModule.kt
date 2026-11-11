@@ -6,7 +6,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.satoshi.usefulyoutube.core.network.BuildConfig
+import dev.satoshi.usefulyoutube.core.network.ChannelSectionsNetworkDataSource
+import dev.satoshi.usefulyoutube.core.network.RetrofitChannelSectionsNetworkDataSource
+import dev.satoshi.usefulyoutube.core.network.RetrofitVideoRatingNetworkDataSource
 import dev.satoshi.usefulyoutube.core.network.RetrofitYouTubeNetworkDataSource
+import dev.satoshi.usefulyoutube.core.network.VideoRatingNetworkDataSource
 import dev.satoshi.usefulyoutube.core.network.YouTubeEndpoints
 import dev.satoshi.usefulyoutube.core.network.YouTubeNetworkDataSource
 import dev.satoshi.usefulyoutube.core.network.api.ApiKeyInterceptor
@@ -29,6 +33,16 @@ annotation class ShortsProbeClient
 internal abstract class NetworkModule {
     @Binds
     abstract fun bindNetworkDataSource(dataSource: RetrofitYouTubeNetworkDataSource): YouTubeNetworkDataSource
+
+    @Binds
+    abstract fun bindVideoRatingDataSource(
+        dataSource: RetrofitVideoRatingNetworkDataSource,
+    ): VideoRatingNetworkDataSource
+
+    @Binds
+    abstract fun bindChannelSectionsDataSource(
+        dataSource: RetrofitChannelSectionsNetworkDataSource,
+    ): ChannelSectionsNetworkDataSource
 
     companion object {
         @Provides

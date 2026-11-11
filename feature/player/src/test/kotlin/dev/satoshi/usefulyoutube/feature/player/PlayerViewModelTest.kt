@@ -14,11 +14,14 @@ import dev.satoshi.usefulyoutube.core.domain.usecase.GetResumePositionUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveChannelsUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObservePlaylistUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveVideoUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.ObserveVideoWithChaptersUseCase
+import dev.satoshi.usefulyoutube.core.domain.usecase.ParseChaptersUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.RecordWatchUseCase
 import dev.satoshi.usefulyoutube.core.domain.usecase.SavePlaybackPositionUseCase
 import dev.satoshi.usefulyoutube.core.model.Channel
 import dev.satoshi.usefulyoutube.core.model.ChannelError
 import dev.satoshi.usefulyoutube.core.model.ChannelId
+import dev.satoshi.usefulyoutube.core.model.Chapter
 import dev.satoshi.usefulyoutube.core.model.DataError
 import dev.satoshi.usefulyoutube.core.model.PlaybackPosition
 import dev.satoshi.usefulyoutube.core.model.PlaylistId
@@ -32,6 +35,7 @@ import dev.satoshi.usefulyoutube.core.testing.data.TestData
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeChannelRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeHistoryRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakePlaylistRepository
+import dev.satoshi.usefulyoutube.core.testing.repository.FakeRecommendationRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeSearchRepository
 import dev.satoshi.usefulyoutube.core.testing.repository.FakeVideoRepository
 import dev.satoshi.usefulyoutube.feature.player.navigation.PlayerDestination
@@ -58,8 +62,12 @@ class PlayerViewModelTest {
     private val playlistRepository = FakePlaylistRepository()
     private var historyRepository = FakeHistoryRepository()
     private val watchedAt = Instant.parse("2026-11-07T10:00:00Z")
+    private val chapteredVideo =
+        TestData
+            .video(id = "chaptered", channel = otherChannel)
+            .copy(description = "0:00 Intro\n2:00 Main part\n5:00 Questions")
     private val searchRepository =
-        FakeSearchRepository(SearchSession("q", SearchOrder.RELEVANCE, null), listOf(foundVideo))
+        FakeSearchRepository(SearchSession("q", SearchOrder.RELEVANCE, null), listOf(foundVideo, chapteredVideo))
 
     private fun createViewModel(
         videoId: String,
@@ -73,11 +81,15 @@ class PlayerViewModelTest {
                 ),
             ),
         observeVideo =
-            ObserveVideoUseCase(
-                FakeVideoRepository(listOf(video)),
-                searchRepository,
-                playlistRepository,
-                historyRepository,
+            ObserveVideoWithChaptersUseCase(
+                ObserveVideoUseCase(
+                    FakeVideoRepository(listOf(video)),
+                    searchRepository,
+                    playlistRepository,
+                    historyRepository,
+                    FakeRecommendationRepository(),
+                ),
+                ParseChaptersUseCase(),
             ),
         observeChannels = ObserveChannelsUseCase(channelRepository),
         observePlaylist = ObservePlaylistUseCase(playlistRepository),
@@ -333,5 +345,68 @@ class PlayerViewModelTest {
 
             assertThat(historyRepository.currentHistory.map { it.video.id }).containsExactly(live.id)
             assertThat(historyRepository.observePlaybackPositions().first()).isEmpty()
+        }
+
+    @Test
+    fun `chapters come from the description and the first one is current at the start`() =
+        runTest {
+            val viewModel = createViewModel("chaptered")
+            collectInBackground(viewModel.uiState)
+            advanceUntilIdle()
+
+            val content = viewModel.uiState.value as PlayerUiState.Content
+            assertThat(content.chapters).containsExactly(
+                Chapter("Intro", Duration.ZERO),
+                Chapter("Main part", 2.minutes),
+                Chapter("Questions", 5.minutes),
+            )
+            assertThat(content.currentChapterIndex).isEqualTo(0)
+        }
+
+    @Test
+    fun `a video without a chapter list has no chapters`() =
+        runTest {
+            val viewModel = createViewModel("abc")
+            collectInBackground(viewModel.uiState)
+            advanceUntilIdle()
+
+            val content = viewModel.uiState.value as PlayerUiState.Content
+            assertThat(content.chapters).isEmpty()
+            assertThat(content.currentChapterIndex).isNull()
+        }
+
+    @Test
+    fun `the current chapter follows the playback and a selected chapter`() =
+        runTest {
+            val viewModel = createViewModel("chaptered")
+            collectInBackground(viewModel.uiState)
+            advanceUntilIdle()
+
+            viewModel.onEvent(PlayerUiEvent.PlaybackProgressed(chapteredVideo.id, position(seconds = 130)))
+            advanceUntilIdle()
+            assertThat((viewModel.uiState.value as PlayerUiState.Content).currentChapterIndex).isEqualTo(1)
+
+            viewModel.onEvent(PlayerUiEvent.ChapterSelected(2))
+            advanceUntilIdle()
+            assertThat((viewModel.uiState.value as PlayerUiState.Content).currentChapterIndex).isEqualTo(2)
+
+            viewModel.onEvent(PlayerUiEvent.ChapterSelected(7))
+            advanceUntilIdle()
+            assertThat((viewModel.uiState.value as PlayerUiState.Content).currentChapterIndex).isEqualTo(2)
+        }
+
+    @Test
+    fun `a resumed video starts in the chapter where it stopped`() =
+        runTest {
+            historyRepository =
+                FakeHistoryRepository(
+                    initialHistory = listOf(WatchedVideo(chapteredVideo, watchedAt)),
+                    initialPositions = mapOf(chapteredVideo.id to position(seconds = 310)),
+                )
+            val viewModel = createViewModel("chaptered")
+            collectInBackground(viewModel.uiState)
+            advanceUntilIdle()
+
+            assertThat((viewModel.uiState.value as PlayerUiState.Content).currentChapterIndex).isEqualTo(2)
         }
 }

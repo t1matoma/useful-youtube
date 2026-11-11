@@ -24,6 +24,11 @@ sealed interface PlayerUiEvent {
     /** The video was paused or the player was closed; the position is saved. */
     data object PlaybackStopped : PlayerUiEvent
 
+    /** The user jumped to the chapter with this index; the screen seeks the player itself. */
+    data class ChapterSelected(
+        val index: Int,
+    ) : PlayerUiEvent
+
     /** The player finished the current video; a playlist goes on with the next one. */
     data object VideoEnded : PlayerUiEvent
 }
