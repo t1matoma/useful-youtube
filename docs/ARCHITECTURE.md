@@ -33,6 +33,13 @@ graph TD
     app --> history[":feature:history"]
     history --> domain
     history --> ui
+    app --> settings[":feature:settings"]
+    settings --> domain
+    settings --> ui
+    app --> recommendations[":feature:recommendations"]
+    recommendations --> domain
+    recommendations --> ui
+    player --> auth
     app --> auth
     auth --> domain
 
@@ -49,7 +56,7 @@ graph TD
 
 | Module | Type | Responsibility |
 |---|---|---|
-| `:app` | Android app | `Application` (Hilt, WorkManager), `MainActivity`, `UsefulYouTubeNavHost` with the bottom navigation |
+| `:app` | Android app | `Application` (Hilt, WorkManager), `MainActivity` with `MainViewModel` (settings that shape the app), `UsefulYouTubeNavHost` with the bottom navigation |
 | `:core:model` | JVM | Domain models, `AppResult`, the `AppError` hierarchy |
 | `:core:domain` | JVM | Use cases, repository interfaces, `ShortsDetector`, channel input parsing |
 | `:core:data` | Android library | Repository implementations, mappers, CSV parser, worker, Hilt bindings |
@@ -68,7 +75,7 @@ Dependency rules:
   The domain only uses `javax.inject`/Dagger annotations (via `hilt-core`).
 - Feature modules do not know about `:core:data`, `:core:database` or `:core:network`. A feature may use
   `:core:auth` only to launch the Google consent screen, which needs an Android `IntentSender`
-  (`:feature:import`, `:feature:playlists`).
+  (`:feature:import`, `:feature:playlists`, `:feature:player`).
 
 The package of `:feature:import` is `feature.subscriptionimport` because `import` is a Kotlin keyword.
 
@@ -156,9 +163,10 @@ Google API errors from the response body (`errors[].reason`, `details[].reason`)
 
 ## Database
 
-Room, schema version 5, exported to `core/database/schemas/`. Version 2 added the search tables,
-version 3 the playlist tables, version 4 the watch history and version 5 its playback position, all with
-`@AutoMigration`; `MigrationTest` checks them against the exported schemas.
+Room, schema version 6, exported to `core/database/schemas/`. Version 2 added the search tables,
+version 3 the playlist tables, version 4 the watch history, version 5 its playback position and version 6 the
+video ratings and the tables of the recommendations, all with `@AutoMigration`; `MigrationTest` checks them
+against the exported schemas.
 
 | Table | Columns |
 |---|---|
@@ -169,10 +177,13 @@ version 3 the playlist tables, version 4 the watch history and version 5 its pla
 | `recent_search_queries` | `query_text` (PK), `used_order` (larger is more recent; at most 10 rows) |
 | `playlists` | `id` (PK, autoincrement), `title`, `remote_id` (unique; YouTube playlist id, `NULL` for app playlists), `synced_at` |
 | `watch_history` | `video_id` (PK), `watched_at`, `playback_position_seconds`, `playback_duration_seconds` (both `0` until saved), and the `VideoSnapshot` columns; at most 500 rows |
+| `video_ratings` | `video_id` (PK), `channel_id`, `rating` (`LIKE` or `DISLIKE`; unrated videos have no row) |
+| `discovered_videos` | `video_id` (PK), the `VideoSnapshot` columns, `suggested_by` (the channel that features the video's channel, `NULL` when the user watched or liked the channel); Shorts are stored too, so they are not loaded again |
+| `featured_channels` | `source_channel_id` (PK), `channel_ids` (comma-separated), `fetched_at` |
 | `playlist_items` | `playlist_id` (FK → playlists, `ON DELETE CASCADE`), `video_id`, `position`, and the `VideoSnapshot` columns; PK (`playlist_id`, `video_id`) |
 
 Indices: `videos.channel_id`, `videos.published_at`, `search_results.position`, unique
-`playlists.remote_id`, `playlist_items.video_id`, `watch_history.watched_at`. `VideoSnapshot` is an `@Embedded` copy of a video for
+`playlists.remote_id`, `playlist_items.video_id`, `watch_history.watched_at`, `discovered_videos.channel_id`. `VideoSnapshot` is an `@Embedded` copy of a video for
 tables that keep videos independently of the subscriptions. DAO methods that change playlists only touch
 app playlists (`remote_id IS NULL`). Details and kinds are written with partial `@Update`s
 (`VideoDetailsUpdate`, `VideoContentKindUpdate`). Any schema change needs a version bump and a migration.
@@ -253,6 +264,70 @@ removes it too.
 - `FeedViewModel` also drops finished videos from the feed. When stored videos exist but all are finished,
   the state is `FeedUiState.AllWatched` instead of `Empty`, which offers the import.
 
+## Chapters
+
+`ParseChaptersUseCase` (domain) reads chapters from a description with two regular expressions (a timestamp
+at the start or at the end of a line), drops everything before `0:00`, timestamps that go back and timestamps
+after the end of the video, and returns nothing for fewer than 3 chapters.
+`ObserveVideoWithChaptersUseCase` hands the player the video together with its chapters.
+
+`PlayerViewModel` keeps the index of the current chapter in its screen state: it follows
+`PlaybackProgressed` (the state changes only when the index does) and `ChapterSelected`; until then it is the
+chapter of the start position. Seeking is a command to the embedded player, like play and pause: `PlayerScreen`
+calls `PlayerController.seekTo` and reports `ChapterSelected`. `ChapterList` is a `LazyRow` that scrolls to the
+current chapter.
+
+## Likes
+
+`VideoRatingRepository` (domain) stores ratings in `video_ratings` and talks to the account through
+`VideoRatingNetworkDataSource` (`videos.getRating`, `videos.rate`). The account is the source of truth:
+
+- `RateVideoUseCase` sends the rating through `AccountAuthorizer.withAccessToken` and stores it only on success;
+- `RefreshVideoRatingUseCase` reads the rating of one video and stores it, `NONE` deletes the row.
+
+The buttons have their own `RatingViewModel` in `:feature:player` (`rating/`), created by `PlayerRoute` for the
+same back stack entry like the save sheet, and told about the current video with `VideoChanged`. It shows the
+rating that is being sent instead of the stored one until YouTube answers, refreshes the rating when a video
+opens (failures are silent) and runs the consent flow of the import screen: `AccountError.Auth(ConsentRequired)`
+→ `AccountConsent.consentScreen()` → `PlayerScreen` launches it → `ConsentFinished(granted)` sends the pending
+rating once more, without asking again.
+
+## Recommendations
+
+Nothing comes from YouTube's recommendation system: the Data API has no endpoint for it.
+
+`ObserveRecommendationsUseCase` combines the feed, the discovered videos, the watch history and the ratings
+and hands them as `RecommendationSignals` to `RecommendationRanker` (domain, `recommendations/`), a pure
+function of the signals and the current time:
+
+- `channelAffinities`: +1 per watched video, +3 per like, −3 per dislike, summed per channel;
+- a discovered video's channel uses its own affinity, otherwise half of the affinity of `suggestedBy`;
+- watched and rated videos and channels with a negative score are dropped;
+- the rest is sorted by `(1 + score) × 1 / (1 + age / 7 days)`, at most 3 videos per channel, 100 in total.
+
+`RefreshRecommendationsUseCase` fills `discovered_videos`:
+
+1. Favorite channels are the channels with a positive affinity, best first. Those outside the subscriptions
+   are their own source (`suggestedBy = null`).
+2. `RecommendationRepository.getFeaturedChannels` is asked for the 5 best favorites. It answers from
+   `featured_channels` for 7 days and otherwise calls `channelSections.list`; when that fails, an outdated
+   answer is used if there is one.
+3. `fetchNewVideos` loads the RSS feeds of at most 20 channels outside the subscriptions (8 at a time, a failed
+   feed is skipped) and the details of the videos that are not stored yet. A video belongs to the channel
+   whose feed was requested.
+4. The videos are classified with `ClassifyVideoUseCase`; unclassified ones are not stored, so they are tried
+   again. `saveDiscoveredVideos` adds the rest and deletes the videos of channels that left the list.
+
+`RecommendationsViewModel` refreshes once on creation and on pull-to-refresh. `ObserveVideoUseCase` also looks
+into `discovered_videos`, so the player opens recommended videos.
+
+## Settings
+
+`SettingsRepository` is implemented by `PreferencesSettingsRepository` over `SharedPreferences` (a
+`callbackFlow` of a change listener): a few flags do not need a table. `AppSettings()` holds the defaults.
+`MainViewModel` in `:app` observes the settings and `UsefulYouTubeNavHost(recommendationsEnabled)` leaves the
+**For you** tab out of the bottom bar when recommendations are off.
+
 ## Channels and import
 
 - `ChannelInputParser` (domain) accepts `UC…` ids (24 characters), `@handle`, and the links
@@ -269,7 +344,8 @@ removes it too.
 
 ## DI and threading
 
-- Hilt modules: `NetworkModule`, `DatabaseModule`, `DataModule`, `DispatchersModule`, `AuthModule`.
+- Hilt modules: `NetworkModule`, `DatabaseModule`, `PersonalizationDaoModule`, `DataModule`,
+  `PersonalizationDataModule`, `DispatchersModule`, `AuthModule`.
   Use cases are created through `@Inject constructor`.
 - `@IoDispatcher` is injected into repositories and the file reader; ViewModels use `viewModelScope`.
 - WorkManager is initialized on demand: `Application` implements `Configuration.Provider` with
@@ -281,8 +357,8 @@ Navigation Compose with type-safe routes. Each feature module exports `XDestinat
 `NavGraphBuilder.xScreen(...)` and, when other screens open it, `NavController.navigateToX()`.
 
 `UsefulYouTubeNavHost` wraps the graph in a `Scaffold` with a bottom `NavigationBar` for the
-`TopLevelDestination`s (feed, search, playlists, history). The bar is shown only on these screens; the player, channels and
-import open on top of them without it. Switching tabs saves and restores each tab's state
+`TopLevelDestination`s (feed, for you, search, playlists, history). The bar is shown only on these screens; the
+player, channels, import and settings open on top of them without it. Switching tabs saves and restores each tab's state
 (`popUpTo(start) { saveState = true }`, `restoreState = true`). The host consumes the bar's insets, so the
 screens' own scaffolds do not pad twice. The selected tab is marked with the accent color and a dot instead of
 the Material indicator.
@@ -294,7 +370,9 @@ has the same background as the Compose theme, so there is no light flash at star
 | Screen | State | Notes |
 |---|---|---|
 | Feed | sealed: `Loading`, `Empty`, `Error`, `Content` | refreshes on open, pull-to-refresh; an error over stored content is shown once in a snackbar |
-| Video | sealed: `Loading`, `NotFound`, `Content(queue)` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`); fullscreen via the player's button (`FullscreenListener` → `FullscreenPlayer`, landscape and hidden system bars while it is shown); picture-in-picture when the app is left during playback (`PictureInPictureEffect`); **Add channel** for videos of other channels; playlist queue with autoplay |
+| Video | sealed: `Loading`, `NotFound`, `Content(queue)` | IFrame player (`android-youtube-player`), `rel=0`, expandable description, survives rotation (`configChanges`); fullscreen via the player's button (`FullscreenListener` → `FullscreenPlayer`, landscape and hidden system bars while it is shown); picture-in-picture when the app is left during playback (`PictureInPictureEffect`); **Add channel** for videos of other channels; playlist queue with autoplay; chapters (`ChapterList`); like and dislike (`RatingViewModel`) |
+| For you | sealed: `Loading`, `Empty`, `Error`, `Content` | ranked videos; looks for videos outside the subscriptions on open and on pull-to-refresh; an error over stored content is shown once in a snackbar |
+| Settings | data class | the **Recommendations** switch |
 | Channels | data class | inline error under the input, removal with confirmation |
 | Search | data class | query field, order chips, recent queries, results with **Show more**; reads the stored search |
 | History | data class | videos grouped by day (`groupByDay` with the injected `Clock` and `ZoneId`), remove, clear with confirmation |
@@ -327,7 +405,8 @@ token or client id is involved: Google Play services cache and renew the access 
 | Migrations | `MigrationTestHelper` on Robolectric with the exported schemas as test assets |
 | Network | MockWebServer with XML/JSON fixtures in `core/network/src/test/resources` |
 | CSV, mappers | Plain unit tests |
-| Compose | Robolectric + `createComposeRule` (v2): feed and search states |
+| Compose | Robolectric + `createComposeRule` (v2): feed, search, recommendations and settings states, player components |
+| Preferences | `PreferencesSettingsRepository` on Robolectric |
 | WorkManager | `TestListenableWorkerBuilder`, `WorkManagerTestInitHelper` |
 
 Kover enforces at least 80% line coverage for `:core:domain` and `:core:data` as part of `check`.

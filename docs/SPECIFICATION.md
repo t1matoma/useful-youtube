@@ -6,7 +6,8 @@ of the app. Changing any of it — adding, removing or altering behaviour — re
 ## Purpose
 
 An Android app that shows a chronological feed of new videos from the user's YouTube subscriptions,
-without Shorts and without recommendations, and plays them in the official embedded player.
+without Shorts, and plays them in the official embedded player. Recommendations are optional, computed on the
+device and never taken from YouTube's own algorithm.
 
 ## Non-negotiable constraints
 
@@ -14,10 +15,12 @@ without Shorts and without recommendations, and plays them in the official embed
 - **Official sources only:** channel RSS feeds, YouTube Data API v3 (with an API key, or with the user's
   OAuth access token for their own account data), the IFrame player.
   No unofficial APIs, scraping of HTML pages or private endpoints.
-- **No recommendations.** The feed shows only videos of channels the user subscribed to. Videos of other
-  channels appear only as results of a search the user explicitly started; the app never suggests
-  videos on its own (no related videos, trends or autocomplete).
-- **Offline-first.** The UI always reads from the local database; the network only updates it.
+- **No YouTube recommendations.** The feed shows only videos of channels the user subscribed to. The only
+  suggestions are the app's own **For you** tab (see **Recommendations**), which the user can turn off: it is
+  computed on the device from the local watch history and the likes, is explainable and uses no engagement
+  tricks (no trends, no related videos, no autocomplete, no autoplay of suggested videos).
+- **Offline-first.** The UI always reads from the local database (the settings from the app's preferences);
+  the network only updates it.
 - **Secrets stay local.** The Data API key comes from `local.properties` → `BuildConfig` and is never committed.
   OAuth needs no client secret or client id in the code: Google identifies the app by its package name and
   signing certificate. Access tokens stay in Google Play services.
@@ -34,9 +37,9 @@ without Shorts and without recommendations, and plays them in the official embed
 
 ### Navigation
 
-A bottom navigation bar switches between **Feed**, **Search**, **Playlists** and **History**; each tab
-keeps its state. The video,
-playlist, channels and import screens open on top of the tabs without the bar.
+A bottom navigation bar switches between **Feed**, **For you**, **Search**, **Playlists** and **History**;
+each tab keeps its state. **For you** is shown only while recommendations are enabled. The video, playlist,
+channels, import and settings screens open on top of the tabs without the bar.
 
 ### Subscriptions
 
@@ -129,6 +132,46 @@ Implemented as the `ShortsDetector` strategy:
   date), newest first. A video can be removed; **Clear history** removes all after confirmation. Tapping a
   video opens it.
 
+### Likes
+
+- The video screen has **Like** and **Dislike** buttons that work like on YouTube: the chosen one is
+  highlighted, tapping it again removes the rating, and choosing the other one replaces it.
+- The rating lives in the YouTube account: it is sent with Data API `videos.rate` (50 quota units) and stored
+  on the device only after YouTube accepted it, so the app never shows a like that YouTube does not have. A
+  rejected rating shows the reason under the buttons.
+- When a video opens, its rating is read from the account with `videos.getRating` (1 unit), so likes given in
+  other apps show up. Without a connected account or a network the stored rating is shown.
+- Rating needs the same Google authorization as the import (scope `https://www.googleapis.com/auth/youtube`).
+  Without it the first rating shows the Google consent screen and is sent once access is granted.
+- Like counts are not shown.
+
+### Recommendations
+
+- The **For you** tab lists videos the user has not watched or rated, at most 100, the most interesting first.
+  It is enabled by default and can be turned off in the settings, which hides the tab.
+- Everything is computed on the device; YouTube has no official API for its recommendations, and the app does
+  not send the watch history anywhere (the Data API cannot write it either).
+- **Signals:** every watched video adds 1 to its channel, a like adds 3, a dislike subtracts 3.
+- **Candidates:**
+  - unwatched videos of the subscriptions (already stored for the feed);
+  - the latest videos of channels the user watched or liked without subscribing;
+  - the latest videos of channels that the user's 5 favorite channels feature on their pages
+    (`channelSections.list`, type `multipleChannels`, 1 unit per channel, the answer is reused for 7 days).
+  At most 20 channels outside the subscriptions are followed. Their videos come from the RSS feeds (no quota)
+  and `videos.list` (1 unit per 50 new videos), and Shorts are removed with the feed's detector.
+- **Order:** `(1 + channel score) × freshness`. The channel score is the channel's own signal sum, or half of
+  the sum of the channel that features it. Freshness is `1 / (1 + age / 7 days)`. Channels with a negative
+  score are left out, and one channel takes at most 3 places.
+- Channels outside the subscriptions are looked for when the tab opens (once per screen) and on
+  pull-to-refresh, never in the background. Without a watch history and likes no request is made and the tab
+  shows the unwatched subscription videos, newest first.
+- Loading, empty and error (with retry) states; a refresh error over stored videos is shown once in a snackbar.
+
+### Settings
+
+- Opened from the feed's top bar. One switch: **Recommendations** (on by default).
+- Settings are stored on the device in the app's preferences.
+
 ### Feed screen
 
 - All regular videos and live streams/premieres of all subscriptions, newest first.
@@ -146,6 +189,12 @@ Implemented as the `ShortsDetector` strategy:
 - Official IFrame player ([android-youtube-player](https://github.com/PierfrancescoSoffritti/android-youtube-player))
   with `rel=0`, so related videos at the end come from the same channel only.
 - Title, channel, relative publication date, and a selectable description that can be expanded and collapsed.
+- **Chapters:** when the author listed chapters in the description, they are shown as a row of cards with the
+  start time and the title. Tapping a chapter jumps to it; the chapter that is playing is highlighted and kept
+  in view. The rules are YouTube's: lines with a timestamp at their start or end (`0:00 Intro`,
+  `[1:02:03] - Finale`, `Intro 0:00`), the list starts at `0:00`, goes in ascending order and has at least 3
+  chapters. Timestamps after the end of the video are ignored. Chapters that YouTube generates automatically
+  are not available: the Data API does not return them.
 - Playback survives screen rotation.
 - **Continue watching:** a video starts where it stopped last time, also after the app was closed and inside a
   playlist. The position is saved every 5 seconds while the video plays and when it is paused, skipped or
@@ -160,6 +209,7 @@ Implemented as the `ShortsDetector` strategy:
   Playback stops when the screen is turned off: the official player must stay visible.
 - A playlist plays in order: when a video ends, the next one starts. A bar under the actions shows
   "‹playlist› · 3 of 12" with **Previous** and **Next**. Back returns to the playlist.
+- **Like** and **Dislike**, see **Likes**.
 - **Save to playlist** opens a sheet with the app playlists, ticked when they contain the video, and
   **New playlist**, which creates a playlist with the video.
 - For a video of a channel that is not subscribed (opened from the search), an **Add channel to
@@ -178,7 +228,7 @@ Clean Architecture + MVVM with unidirectional data flow. Details: [ARCHITECTURE.
 
 - Modules: `:app`, `:core:model`, `:core:domain`, `:core:data`, `:core:database`, `:core:network`,
   `:core:ui`, `:core:auth`, `:core:testing`, `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import`,
-  `:feature:search`, `:feature:playlists`, `:feature:history`.
+  `:feature:search`, `:feature:playlists`, `:feature:history`, `:feature:settings`, `:feature:recommendations`.
 - Dependencies point inwards: feature → domain ← data. Feature modules do not depend on each other.
 - `:core:model` and `:core:domain` have no Android dependencies.
 - A ViewModel exposes a single `StateFlow<UiState>` and receives events through `onEvent(UiEvent)`.

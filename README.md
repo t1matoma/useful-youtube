@@ -1,7 +1,7 @@
 # Useful YouTube
 
 An Android app that shows a chronological feed of new videos from your YouTube subscriptions —
-**without Shorts and without recommendations** — and plays them in the official embedded player.
+**without Shorts and without YouTube's recommendations** — and plays them in the official embedded player.
 You can also search all of YouTube explicitly. There is no backend: everything runs on the device.
 
 ## Features
@@ -15,7 +15,10 @@ You can also search all of YouTube explicitly. There is no backend: everything r
   of a found video to your subscriptions.
 - Shorts filtering: by duration (≤ 180 s), confirmed by checking `youtube.com/shorts/{id}`.
   Live streams and premieres are kept.
-- Video screen: player, title, channel, description.
+- Video screen: player, title, channel, description, chapters from the description with jump on tap.
+- Like and dislike, synced with your YouTube account.
+- Optional **For you** tab: recommendations computed on the device from your watch history and likes
+  (subscriptions plus channels your favorite authors feature); can be turned off in the settings.
 - Channel management: add by link, `@handle` or channel id (`UC…`), remove.
 - Hourly background refresh when a network is available (WorkManager).
 - Offline-first: the UI always shows data from the local database.

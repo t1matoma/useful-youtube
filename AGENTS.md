@@ -6,7 +6,8 @@ Read this file at the start of every session and follow it exactly.
 ## 1. What you must know every session
 
 - **Project:** Useful YouTube is an Android app (Kotlin, Jetpack Compose, Material 3, minSdk 26) that shows
-  a feed of YouTube subscription videos without Shorts and plays them in the official embedded player.
+  a feed of YouTube subscription videos without Shorts and plays them in the official embedded player, with
+  optional recommendations computed on the device.
 - **Status:** the app is feature-complete. The work now is maintenance: bug fixes, dependency updates,
   refactoring and small approved changes.
 - **Scope:** [docs/SPECIFICATION.md](docs/SPECIFICATION.md) describes the current behaviour. It is the
@@ -16,8 +17,9 @@ Read this file at the start of every session and follow it exactly.
 - **Hard constraints** (never break them):
   - no backend;
   - only official sources (RSS, YouTube Data API v3, IFrame player), no unofficial APIs or scraping;
-  - no recommendations;
-  - offline-first: the UI reads only from Room;
+  - no recommendations from YouTube: the only suggestions are the app's own "For you" tab, computed on the
+    device from the local history and likes, which the user can turn off;
+  - offline-first: the UI reads only from Room (and the settings from the app's preferences);
   - never commit `local.properties` or any API key.
 - **Architecture invariants:**
   - feature → domain ← data, no feature-to-feature dependencies;
@@ -110,6 +112,19 @@ Environment:
 4. Add a migration test with `MigrationTestHelper` (`room-testing` is already a test dependency).
 5. Never use destructive migration: users would lose their subscriptions.
 
+**Add a setting**
+
+1. Add a field with its default to `AppSettings` (`:core:model`) and a setter to `SettingsRepository`.
+2. Read and write it in `PreferencesSettingsRepository`; extend `FakeSettingsRepository`.
+3. Add a use case for the setter and a row to `SettingsScreen` (`:feature:settings`) with its strings.
+
+**Change the recommendations**
+
+1. Weights and the order live in `core/domain/.../recommendations/`; the sources of channels and their limits
+   in `RefreshRecommendationsUseCase`.
+2. Update `RecommendationRankerTest`, `RecommendationUseCasesTest` and `docs/SPECIFICATION.md`.
+3. This is a behaviour change, so get approval first. Keep it on the device and on official sources.
+
 **Add a screen**
 
 1. Create `feature/<name>` with the `usefulyoutube.android.feature` plugin and a namespace
@@ -147,7 +162,11 @@ Environment:
 | Theme, shared components, error texts | `:core:ui` |
 | Google account authorization (`AccountAuthorizer`, `AccountConsent`) | `:core:auth` |
 | Fakes, test data, `MainDispatcherRule`, `collectInBackground` | `:core:testing` |
-| Screens | `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import` (package `feature.subscriptionimport`), `:feature:search`, `:feature:playlists`, `:feature:history` |
+| Screens | `:feature:feed`, `:feature:player`, `:feature:channels`, `:feature:import` (package `feature.subscriptionimport`), `:feature:search`, `:feature:playlists`, `:feature:history`, `:feature:settings`, `:feature:recommendations` |
+| Recommendations | `RecommendationRanker`, `channelAffinities`, `RefreshRecommendationsUseCase`, `OfflineFirstRecommendationRepository` |
+| Likes | `RateVideoUseCase`, `RefreshVideoRatingUseCase`, `OfflineFirstVideoRatingRepository`, `feature/player/.../rating/` |
+| Chapters | `ParseChaptersUseCase`, `feature/player/.../component/ChapterList.kt` |
+| Settings storage | `PreferencesSettingsRepository` (`SharedPreferences`), `MainViewModel` in `:app` |
 | Search pipeline | `SearchVideosUseCase`, `LoadMoreSearchResultsUseCase`, `OfflineFirstSearchRepository` |
 | Shared video card, thumbnail and duration formatting | `:core:ui` (`core.ui.video`) |
 | Text input dialog | `:core:ui` (`TextInputDialog`) |
@@ -182,6 +201,19 @@ Environment:
   split by responsibility instead of suppressing it (`SearchDao`/`RecentSearchQueryDao`,
   `PlaylistRepository`/`MirroredPlaylistRepository`).
 - `search.list` costs 100 quota units per page. Never load search pages automatically.
+- `videos.rate` costs 50 quota units; `videos.getRating` and `channelSections.list` cost 1. Do not rate or
+  load featured channels in the background.
+- The Data API cannot write the account's watch history and has no endpoint for YouTube's recommendations
+  (`activities.list?home` and `search.list?relatedToVideoId` were removed). Do not look for workarounds such as
+  signing in inside the player's WebView: that is not an official source.
+- detekt's `TooManyFunctions` also counts `@Provides`/`@Binds` functions, DAO accessors of the database and
+  data source methods; add a module or an interface (`PersonalizationDataModule`, `PersonalizationDaoModule`,
+  `VideoRatingNetworkDataSource`) instead of growing the existing ones.
+- detekt's `LongParameterList` allows 6 constructor parameters; combine use cases
+  (`ObserveVideoWithChaptersUseCase`) or split the ViewModel (`RatingViewModel`) instead of adding a seventh.
+- The Gradle daemon can run out of metaspace after many builds in one session (`OutOfMemoryError: Metaspace`).
+  Run `./gradlew --stop` and repeat; do not raise the memory settings.
+- `material-icons-core` has no thumb-down icon; the dislike button rotates `ThumbUp`.
 - Create ViewModels inside the test or `by lazy`, not as a field initializer: `viewModelScope` captures
   `Dispatchers.Main.immediate` when the ViewModel is created, before `MainDispatcherRule` replaces it.
 - Do not trust `yt:channelId` of RSS feeds: the feed header carries it without the `UC` prefix and it may
